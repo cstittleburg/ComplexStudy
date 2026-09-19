@@ -1,0 +1,5 @@
+# test output and OS noise
+undefined/
+*.png
+.DS_Store
+node_modules/
