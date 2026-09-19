@@ -1,2 +1,44 @@
-# ComplexStudy
-Nursing exam help
+# Shift Ready
+
+A study app for **NURS 4620/4720 Complex Healthcare Problems Across the Lifespan**.
+It turns the course's case studies into short, replayable "shifts" that walk through the
+**Clinical Judgment Measurement Model** (Recognize cues → Analyze cues → Prioritize hypotheses →
+Generate solutions → Take action → Evaluate outcomes), the same six-question structure the
+Next Generation NCLEX and the course exams use.
+
+## Open it
+
+No install, no server. Open `index.html` in any browser (double-click it, or serve the folder with
+GitHub Pages). Progress (XP, streak, mastery per step, muddy points) is saved in that browser.
+
+## What's inside
+
+| Mode | What it practices |
+| --- | --- |
+| Start a shift | One random unfolding case (all six steps) plus quick rounds: Who first?, a trend, an ABG, delegation. About 12 minutes. |
+| Pick a case | 16 unfolding cases from the course: asthma, COPD, pneumonia→sepsis, ARDS/respiratory failure, PE, stroke, ICP/TBI, spinal cord injury, autonomic dysreflexia, seizure, burns, DKA, septic shock, post-op hemorrhage, dehydration in an older adult, fluid overload. |
+| Who first? | Four clients, choose who to see first, then name the cue that decided it. Randomly assembled from 50 patient cards. |
+| Trend Detective | Two columns of a flowsheet with fresh numbers every time. Better, worse, same? Then name the threat. |
+| ABG Decoder | Randomly generated blood gases: disorder, compensation, cause, action. |
+| Bow-tie builder | The NGN drag-and-drop item, tap style. |
+| What stays with the RN? | Delegation calls. |
+| Rhyme & Reason | 44 mnemonic and rhyme cards, with a quiz-me mode. |
+| Muddy points | Everything missed, ready to replay. |
+
+Every wrong answer gets a short, kind explanation and the case continues to the next step,
+exactly like the exam. Names, ages and answer order change on every replay.
+
+## Files
+
+```
+index.html            page + styles
+app.js                the engine (item types, modes, scoring, chart panel)
+content/frameworks.js thinking models (CJMM, Priority Lens, SBAR) — add new frameworks here
+content/resp.js       respiratory cases
+content/neuro.js      neuro cases
+content/fluids.js     burns, fluids/electrolytes, sepsis, lifespan cases
+content/pools.js      Who-first cards, trend templates, ABG data, rhyme deck
+docs/ADDING-CASES.md  how to add cases, cards, rhymes, or a new framework
+```
+
+See `docs/ADDING-CASES.md` for the content format. The plan is to grow this to cover the whole course.
