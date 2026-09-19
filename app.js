@@ -32,7 +32,7 @@ const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 
 /* ---------------- persistent state ---------------- */
 const KEY = 'shift-ready-v1';
-const DEFAULT = { xp: 0, streak: { last: null, count: 0 }, shifts: 0, answered: 0, perfect: 0, mastery: {}, muddy: {}, badges: [], settings: { sound: false, theme: 'system', timerMin: 10, examDate: '2026-09-25', examName: 'Exam 1' }, seen: {} };
+const DEFAULT = { xp: 0, streak: { last: null, count: 0 }, shifts: 0, answered: 0, perfect: 0, mastery: {}, muddy: {}, badges: [], settings: { sound: false, theme: 'system', timerMin: 10 }, seen: {} };
 let S = load();
 function load() { try { const raw = localStorage.getItem(KEY); if (raw) return Object.assign({}, DEFAULT, JSON.parse(raw)); } catch (e) { } return JSON.parse(JSON.stringify(DEFAULT)); }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }
@@ -400,13 +400,6 @@ function chartPanel(c, pt) {
 function show(node) { app.innerHTML = ''; const v = el('div', { class: 'view' }, node); app.append(v); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function masteryPct(fw, step) { const m = S.mastery[fw + ':' + step]; return m && m.n ? Math.round(100 * m.s / m.n) : 0; }
 
-function examChip() {
-  const d = S.settings.examDate; if (!d) return null;
-  const days = Math.ceil((new Date(d + 'T00:00:00') - new Date(new Date().toDateString())) / 864e5);
-  const label = days > 1 ? `${days} days away` : days === 1 ? 'tomorrow' : days === 0 ? 'today' : 'done';
-  const dow = new Date(d + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long' });
-  return el('span', { class: 'stat', style: 'margin-bottom:10px' }, '📅 ' + (S.settings.examName || 'Exam') + ' · ' + dow + ' · ', el('span', { class: 'n' }, label));
-}
 function homeView() {
   const fw = FRAMEWORKS.cjmm;
   const mastery = el('div', { class: 'mastery' });
@@ -418,7 +411,7 @@ function homeView() {
   const greet = S.shifts === 0 ? 'Welcome to your first shift.' : `Shift ${S.shifts + 1}. ${pick(['Notice the change.', 'Name the threat.', 'Act, then reassess.', 'Map it, don\'t memorize it.'])}`;
   show(el('div', {},
     el('div', { class: 'hero' },
-      el('div', { class: 'card lift' }, el('div', { class: 'eyebrow' }, 'Complex Healthcare Problems Across the Lifespan'), el('div', {}, examChip()), el('h1', {}, greet), el('p', { class: 'lead' }, 'Short, real-feeling cases from your course, walked through the Clinical Judgment Measurement Model one step at a time. One shift takes about twelve minutes. Then take a break; you earned it.'),
+      el('div', { class: 'card lift' }, el('div', { class: 'eyebrow' }, 'Complex Healthcare Problems Across the Lifespan'), el('h1', {}, greet), el('p', { class: 'lead' }, 'Short, real-feeling cases from your course, walked through the Clinical Judgment Measurement Model one step at a time. One shift takes about twelve minutes. Then take a break; you earned it.'),
         el('div', { class: 'row', style: 'margin-top:16px' }, el('button', { class: 'btn primary', type: 'button', onclick: () => Modes[0].start() }, '▶ Start a shift'), el('button', { class: 'btn', type: 'button', onclick: () => caseListView() }, 'Pick a case'), muddyN ? el('button', { class: 'btn', type: 'button', onclick: () => muddyView() }, `Muddy points (${muddyN})`) : null),
         el('div', { class: 'rhymebox' }, '“' + pick(fw.steps).rhyme + '”')),
       el('div', { class: 'card' }, el('div', { class: 'eyebrow' }, 'Your map of the model'), el('p', { class: 'hint', style: 'margin:4px 0 10px' }, 'Tap a step for its rhyme. Bars fill as you get items right.'), mastery,
@@ -609,13 +602,10 @@ function muddyView() {
 function settingsView() {
   const sw = (on, fn) => { const b = el('button', { class: 'switch' + (on ? ' on' : ''), type: 'button', role: 'switch', 'aria-checked': on ? 'true' : 'false' }); b.addEventListener('click', () => { const v = !b.classList.contains('on'); b.classList.toggle('on', v); b.setAttribute('aria-checked', v); fn(v); }); return b; };
   const theme = el('select', {}, ...['system', 'light', 'dark'].map(t => el('option', { value: t, selected: S.settings.theme === t }, t))); theme.addEventListener('change', () => { S.settings.theme = theme.value; save(); applyTheme(); });
-  const ex = el('input', { type: 'date', value: S.settings.examDate || '' }); ex.addEventListener('change', () => { S.settings.examDate = ex.value; save(); });
-  const exn = el('input', { type: 'text', value: S.settings.examName || '', placeholder: 'Exam 1', style: 'width:110px' }); exn.addEventListener('change', () => { S.settings.examName = exn.value; save(); });
   const tm = el('select', {}, ...[5, 10, 15, 20, 25].map(m => el('option', { value: m, selected: S.settings.timerMin === m }, m + ' minutes'))); tm.addEventListener('change', () => { S.settings.timerMin = +tm.value; save(); });
   show(el('div', {}, backRow('Settings'), el('div', { class: 'card' },
     el('div', { class: 'setting' }, el('div', {}, el('strong', {}, 'Sounds'), el('div', { class: 'hint' }, 'A soft tone on check.')), sw(S.settings.sound, v => { S.settings.sound = v; save(); })),
     el('div', { class: 'setting' }, el('div', {}, el('strong', {}, 'Theme'), el('div', { class: 'hint' }, 'System follows your device.')), theme),
-    el('div', { class: 'setting' }, el('div', {}, el('strong', {}, 'Next exam'), el('div', { class: 'hint' }, 'Shows a countdown on the home screen.')), el('div', { class: 'row' }, exn, ex)),
     el('div', { class: 'setting' }, el('div', {}, el('strong', {}, 'Focus sprint length'), el('div', { class: 'hint' }, 'The ⏱ button starts a countdown. When it ends, take a break.')), tm),
     el('div', { class: 'setting' }, el('div', {}, el('strong', {}, 'Reset progress'), el('div', { class: 'hint' }, 'Clears XP, streak, mastery and muddy points on this device.')), el('button', { class: 'btn sm', type: 'button', onclick: () => { if (confirm('Reset all progress on this device?')) { S = JSON.parse(JSON.stringify(DEFAULT)); save(); updateHeader(); toast('Progress reset'); homeView(); } } }, 'Reset')),
     el('p', { class: 'hint', style: 'margin-top:14px' }, 'Progress is saved in this browser only. Content: ' + CASES.length + ' cases, ' + WHO_FIRST.length + ' priority cards, ' + TREND_TEMPLATES.length + ' trend templates, ' + RHYMES.length + ' rhyme cards.'))));
