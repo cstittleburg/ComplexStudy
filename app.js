@@ -342,7 +342,7 @@ function questionCard({ item, pt = {}, framework = 'cjmm', stepIndex, key, label
   if (extraTop) card.append(extraTop);
   if (step) card.append(el('div', { class: 'stepchip' }, el('span', { class: 'num' }, (stepIndex ?? fw.steps.indexOf(step)) + 1), step.label, el('span', { class: 'q' }, '· ' + step.question)));
   card.append(el('p', { class: 'prompt' }, fill(item.prompt, pt)));
-  if (item.unverified) card.append(el('p', { class: 'hint' }, 'The course packet did not mark an answer for this question, so this key is a best reading of the packet. Check it against the class answer key.'));
+  if (item.unverified) card.append(el('p', { class: 'hint' }, 'The packet did not include an answer key for this question; the key here was supplied from the course materials.'));
   const box = el('div'); card.append(box);
   const r = ItemTypes[item.type](item, box, pt);
   const actions = el('div', { class: 'actions' });
