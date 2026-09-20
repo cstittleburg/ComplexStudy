@@ -231,3 +231,99 @@ window.RHYMES = [
   { cat: 'Lifespan', front: 'Pediatric red flags', back: 'Feeding, behavior, work of breathing, wet diapers.\n\n"Too tired to feed is too tired to breathe."', tip: 'Fewer wet diapers = dehydration.' },
   { cat: 'Lifespan', front: 'Preeclampsia with severe features', back: 'BP ≥ 160/110 + headache, blurred vision, epigastric pain. Risk: seizure (eclampsia), stroke.', tip: '"Pair the symptom with the complication it may signal."' }
 ];
+
+/* ---------- QUICK FIRE (from the Week 1 Kahoot; answers as the instructor marked them) ---------- */
+window.QUICKFIRE = [
+  { q: 'A client with a brain tumor has restlessness, increased drowsiness and agitation. What actions should the nurse take now? Select the 2 that apply.', multi: true, options: [
+    { t: 'Maintain the body in a neutral position', ok: true, why: 'Head midline promotes venous drainage from the brain.' },
+    { t: 'Hyperventilate the client', ok: true, why: 'Lowers CO₂ briefly, constricting cerebral vessels (a short-term rescue measure, as taught in class).' },
+    { t: 'Place the client supine', ok: false, why: 'Flat raises ICP.' },
+    { t: 'Ensure cerebral perfusion pressure is less than 70 mmHg', ok: false, why: 'Backwards: keep CPP adequate (about 60–70+).' },
+    { t: 'Suction the client for at least 20 seconds', ok: false, why: 'Prolonged suctioning spikes ICP; limit to 10–15 seconds.' },
+    { t: 'Administer a rapid IV bolus', ok: false, why: 'Sudden volume can raise ICP.' } ],
+    rationale: 'Restless, drowsier, agitated = rising ICP. Protect drainage (neutral head), avoid anything that spikes pressure, and use the rescue measures the team orders.' },
+  { q: 'PACU client: HR 115, RR 20, temp 97.2, BP 84/50. What should the nurse do first?', options: [
+    { t: 'Assess for bleeding', ok: true, why: 'Fast heart + low pressure after surgery = hemorrhage until proven otherwise. Assess, then act.' },
+    { t: 'Notify the provider', ok: false, why: 'You need the assessment to report.' },
+    { t: 'Increase the rate of IV fluids', ok: false, why: 'Treats the number, not the cause.' },
+    { t: 'Review the pre-op vital signs', ok: false, why: 'Useful context, not the first action.' } ],
+    rationale: 'Nursing process: assess before you intervene. The likely cause of post-op tachycardia with hypotension is bleeding.' },
+  { q: 'A client with type 1 diabetes had a splenectomy and is in the PACU. Which actions should the nurse take? Select the 2 that apply.', multi: true, options: [
+    { t: 'Monitor the client\'s glucose levels', ok: true, why: 'Surgical stress and NPO status swing glucose both ways.' },
+    { t: 'Maintain an intact dressing on the surgical site', ok: true, why: 'Bleeding risk after splenectomy.' },
+    { t: 'Administer a bolus of IV dextrose', ok: false, why: 'No hypoglycemia identified.' },
+    { t: 'Have the client eat a snack after awakening', ok: false, why: 'NPO until bowel function and swallowing are safe.' },
+    { t: 'Ask about usual diabetes management', ok: false, why: 'Later; not a PACU priority.' },
+    { t: 'Give orange juice when awake', ok: false, why: 'Not without a glucose reading and diet order.' } ],
+    rationale: 'In PACU: monitor what the surgery and the disease can change (glucose, bleeding). Teaching and food wait.' },
+  { q: 'Coronary artery disease: which data indicates a DECREASE in cardiac output?', options: [
+    { t: 'Disorientation and 20 mL urine output over the last 2 hours', ok: true, why: 'Brain and kidneys are the first organs to show poor forward flow.' },
+    { t: 'BP 108/60, ascites, crackles', ok: false, why: 'Congestion (backward failure), not output.' },
+    { t: 'Reduced pulse pressure and heart murmur', ok: false, why: 'Suggestive but not the best evidence.' },
+    { t: 'Jugular vein distention and postural BP changes', ok: false, why: 'Volume status, not output.' } ],
+    rationale: 'Low cardiac output shows up where perfusion matters most: mental status and urine output.' },
+  { q: 'A client is actively bleeding from esophageal varices. Which medication would the nurse MOST expect to be given?', options: [
+    { t: 'Octreotide', ok: true, why: 'Reduces portal pressure to slow variceal bleeding.' },
+    { t: 'Propranolol', ok: false, why: 'Prevents bleeding long term; not for an active bleed.' },
+    { t: 'Spironolactone', ok: false, why: 'For ascites.' },
+    { t: 'Lactulose', ok: false, why: 'For hepatic encephalopathy.' } ],
+    rationale: '"Active bleed → octreotide. Prevent the bleed → propranolol."' },
+  { q: 'A client with AIDS has a decreased appetite and is almost anorexic. What is the best action by the nurse?', options: [
+    { t: 'Administer megestrol acetate', ok: true, why: 'An appetite stimulant treats the physiologic problem.' },
+    { t: 'Ask the family to bring in foods the client enjoys', ok: false, why: 'Helpful, but does not fix anorexia.' },
+    { t: 'Have the dietitian prepare favorite meals', ok: false, why: 'Same.' },
+    { t: 'Talk with the client about the unwillingness to eat', ok: false, why: 'Assumes a choice; this is physiologic.' } ],
+    rationale: 'When the cause is physiologic (disease-related anorexia), the best action targets the physiology.' },
+  { q: 'Which client should be assessed first?', options: [
+    { t: '85-year-old with COPD, increased wheezing, SpO₂ 89% on 2 L', ok: true, why: 'INCREASED wheezing is a change. The 89% alone would be expected; the change is not.' },
+    { t: '62-year-old with emphysema who has 500 mL left in the IV bag', ok: false, why: 'Routine.' },
+    { t: '74-year-old with chronic bronchitis, BP 128/58, HR 104, RR 26', ok: false, why: 'Mildly abnormal but stable for the disease.' },
+    { t: '86-year-old admitted 30 minutes ago awaiting admission assessment', ok: false, why: 'Important, but no cue of instability.' } ],
+    rationale: 'Expected vs unexpected: a COPD client at 89% is expected, but "increased wheezing" is a worsening trend. Change beats abnormal.' },
+  { q: 'Teaching a parent of a child with cystic fibrosis when to perform chest physiotherapy. Which is correct?', options: [
+    { t: 'Before meals', ok: true, why: 'Clears mucus before eating; avoids vomiting a full stomach.' },
+    { t: 'Thirty minutes after meals', ok: false, why: 'Risk of vomiting.' },
+    { t: 'During episodes of bronchospasm', ok: false, why: 'Worsens the spasm.' },
+    { t: 'Immediately after exercise', ok: false, why: 'Not the standard timing.' } ],
+    rationale: '"Clear the chest, then eat the rest."' },
+  { q: 'A client at 30 weeks reports painless bright-red vaginal bleeding. What should the nurse do first?', options: [
+    { t: 'Assess fetal heart rate', ok: true, why: 'Painless bright-red bleeding = placenta previa; check the fetus first.' },
+    { t: 'Perform a vaginal exam', ok: false, why: 'NEVER with suspected previa: can tear the placenta.' },
+    { t: 'Encourage ambulation', ok: false, why: 'Bed rest.' },
+    { t: 'Apply a heating pad', ok: false, why: 'No.' } ],
+    rationale: '"Painless and bright: previa. No fingers, no exam, check the heartbeat first."' },
+  { q: 'A client with schizophrenia says, "The voices are now louder. I might do what they say." What should the nurse do first?', options: [
+    { t: 'Ask what the voices are directing the client to do', ok: true, why: 'Assess the content: is it a command to harm self or others?' },
+    { t: 'Move the client to a quiet area', ok: false, why: 'After assessing the danger.' },
+    { t: 'Administer the PRN antipsychotic', ok: false, why: 'After assessment.' },
+    { t: 'Notify the provider of the change', ok: false, why: 'You need to know what to report.' } ],
+    rationale: 'Assess before you act: command hallucinations change the safety plan.' }
+];
+
+/* Extra Who-first cards from the Kahoot and Week 1 cases */
+window.WHO_FIRST.push(
+  { tier: 1, sys: 'Resp', t: '85-year-old with COPD: increased wheezing, SpO₂ 89% on 2 L.', cue: 'Increased wheezing (a worsening trend) in a COPD client', why: 'The 89% is expected; the increase in wheezing is the change.' },
+  { tier: 3, sys: 'Resp', t: '62-year-old with emphysema who has 500 mL of IV fluid left in the bag.', cue: 'IV bag running low', why: 'Routine task; can be delegated or done later.' },
+  { tier: 2, sys: 'Resp', t: '74-year-old with chronic bronchitis: BP 128/58, HR 104, RR 26.', cue: 'Mildly elevated HR and RR, stable', why: 'Abnormal but stable for the disease.' },
+  { tier: 3, sys: 'Resp', t: '86-year-old admitted 30 minutes ago, awaiting the admission assessment.', cue: 'Admission assessment pending', why: 'Needs doing, but no cue of instability yet.' },
+  { tier: 1, sys: 'Fluids', t: 'Post-op day 4 colectomy: temp 101.8 °F, HR 118, abdomen distended and diffusely tender, urine 25 mL/hr.', cue: 'Fever with new diffuse abdominal tenderness and falling urine output after bowel surgery', why: 'Anastomotic leak until proven otherwise; sepsis risk.' },
+  { tier: 1, sys: 'Fluids', t: 'PACU client: HR 115, BP 84/50, temp 97.2 °F.', cue: 'Post-op tachycardia with hypotension', why: 'Bleeding until proven otherwise.' },
+  { tier: 1, sys: 'Neuro', t: 'Stroke client with dysphagia: continuous tube feeding running, head of bed at 15°, coughing, SpO₂ 90%.', cue: 'Coughing with a falling SpO₂ during tube feeding at a low head-of-bed angle', why: 'Aspiration; stop the feeding and sit up.' },
+  { tier: 1, sys: 'Lifespan', t: '30 weeks pregnant: painless bright-red vaginal bleeding.', cue: 'Painless bright-red bleeding in the third trimester (placenta previa)', why: 'Check fetal heart rate; no vaginal exam.' },
+  { tier: 1, sys: 'Trauma', t: 'Femur fracture after a car crash: HR 132, BP 86/52, thigh swelling increasing, no urine output.', cue: 'Tachycardia and hypotension with a swelling thigh', why: 'Hidden hemorrhage into the thigh.' }
+);
+
+/* Extra rhymes from the new material */
+window.RHYMES.push(
+  { cat: 'Priority', front: 'The A-to-I primary survey', back: 'Airway · Breathing · Circulation · Disability · Exposure · Full vitals & Family · Give comfort · Head-to-toe · Inspect the back.\n\n"A-B-C-D-E, then F-G-H-I: fix what kills, then find the rest."', tip: 'Disability = neuro check, AVPU, pupils, glucose.' },
+  { cat: 'Priority', front: 'Seven prioritization frameworks', back: 'ABCs · Nursing process (assess before you act) · Least restrictive/least invasive · Stable vs unstable · Acute vs chronic · Maslow · Safety and risk reduction.', tip: 'When two answers both look right, ask which framework the question is testing.' },
+  { cat: 'Priority', front: 'Assess before you act', back: '"Numbers say something is wrong; assessment says what. Look before you treat."\n\nPACU HR 115, BP 84/50 → assess for bleeding before calling or bolusing.', tip: 'Exception: an obvious airway or cardiac arrest gets action first.' },
+  { cat: 'Neuro', front: 'ICP: what the nurse controls at the bedside', back: 'Head neutral and up · no hip flexion · suction ≤ 10–15 seconds · no rapid boluses · quiet room · treat fever and pain.', tip: '"Neutral, not supine. Short suction, slow fluids."' },
+  { cat: 'Fluids', front: 'Hidden bleeding', back: '"A femur can hide a liter; a belly can hide more."\n\nFast heart + low pressure + no urine = hypovolemia. Fill the tank before the morphine.', tip: 'Morphine on an empty tank drops the pressure further.' },
+  { cat: 'Fluids', front: 'Perfusion scorecard', back: 'MAP ≥ 65 · urine ≥ 0.5 mL/kg/hr · lactate falling · mentation clearing.\n\nFever and WBC track infection. SpO₂ tracks oxygenation. Do not mix the scorecards.', tip: 'Evaluate the outcome that matches the problem.' },
+  { cat: 'Neuro', front: 'Meds through a feeding tube', back: '"One at a time, flush between; never crush ER, DR, or enteric-coated."\n\nCheck placement first, head up during and after, hold the beta-blocker if HR < 60.', tip: 'Subcutaneous insulin is not affected by NPO.' },
+  { cat: 'Lifespan', front: 'Placenta previa', back: '"Painless and bright: previa. No fingers, no exam, check the heartbeat first."', tip: 'Abruption is painful with a rigid uterus.' },
+  { cat: 'Respiratory', front: 'Cystic fibrosis chest physiotherapy', back: '"Clear the chest, then eat the rest": before meals, never during bronchospasm.', tip: '' },
+  { cat: 'Fluids', front: 'Variceal bleeding', back: '"Active bleed → octreotide. Prevent the bleed → propranolol. Ammonia → lactulose. Ascites → spironolactone."', tip: 'Match the drug to the liver problem.' },
+  { cat: 'Fluids', front: 'Low cardiac output', back: 'Shows up where perfusion matters most: confusion and a dry catheter bag.\n\n"Brain and kidneys tell on the heart."', tip: 'Crackles and JVD are congestion, a different story.' }
+);

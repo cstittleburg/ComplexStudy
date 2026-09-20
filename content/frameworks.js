@@ -30,6 +30,23 @@ window.FRAMEWORKS = {
       { id: 'now', label: 'What must happen now?', question: 'The first safe action.' }
     ]
   },
+  atoi: {
+    id: 'atoi',
+    name: 'A-to-I Primary Survey',
+    short: 'A to I',
+    mnemonic: 'A-B-C-D-E, then F-G-H-I: fix what kills, then find the rest.',
+    steps: [
+      { id: 'a', label: 'Airway', question: 'Patent? Vocal sounds, chest movement, obstruction.' },
+      { id: 'b', label: 'Breathing', question: 'Rate, effort, lung sounds, SpO₂.' },
+      { id: 'c', label: 'Circulation', question: 'Skin, pulses, BP, capillary refill, urine output.' },
+      { id: 'd', label: 'Disability', question: 'Neuro check, AVPU, pupils, glucose.' },
+      { id: 'e', label: 'Exposure', question: 'Undress to assess; keep warm.' },
+      { id: 'f', label: 'Full vitals & Family', question: 'Complete the vital signs; support the family.' },
+      { id: 'g', label: 'Give comfort', question: 'Pain, nausea, distraction, presence.' },
+      { id: 'h', label: 'Head-to-toe', question: 'Focused assessment for the admitting problem.' },
+      { id: 'i', label: 'Inspect posterior', question: 'Back, spine, alignment.' }
+    ]
+  },
   sbar: {
     id: 'sbar',
     name: 'SBAR handoff',

@@ -70,19 +70,26 @@ Each template describes a story (hemorrhage, burn shock, sepsis…). Rows have a
 (`base`), a direction (`dir: 'up' | 'down' | 'flat'`), a change range (`delta`), and which direction is
 bad for that row (`worse`). The app generates fresh numbers every time.
 
-## 4. Rhymes (`RHYMES`)
+## 4. Quick-fire questions (`QUICKFIRE`)
+
+```js
+{ q: 'The question text', options: [{ t, ok, why }], rationale: '…' }          // one answer
+{ q: '…', multi: true, options: [...], rationale: '…' }                           // select-all
+```
+
+## 5. Rhymes (`RHYMES`)
 
 ```js
 { cat: 'Neuro', front: 'Cushing\'s triad', back: 'Pressure HIGH, pulse LOW, breathing WEIRD.', tip: 'A late sign.' }
 ```
 
-## 5. A new framework (`content/frameworks.js`)
+## 6. A new framework (`content/frameworks.js`)
 
 Add an entry with an `id`, `name`, `short`, `mnemonic`, and `steps: [{ id, label, question, rhyme }]`.
 Then tag items with those step ids and set `framework: 'yourid'` on a case. The step ribbon and the
 mastery tracking come along automatically.
 
-## 6. Loading a new content file
+## 7. Loading a new content file
 
 If you create a new file (for example `content/cardiac.js`), add one line to `index.html` next to the
 other `<script src="content/…">` lines. That is the only edit outside `content/` you will ever need.
