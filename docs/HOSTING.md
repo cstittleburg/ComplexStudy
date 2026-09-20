@@ -17,17 +17,17 @@ Every merge to `main` redeploys automatically.
 2. Open **SQL editor**, paste the contents of `supabase/migrations/0001_progress.sql`, run it. This creates one `progress` row per user with row-level security so each person can only read their own row.
 3. Under **Authentication → Providers**, make sure **Email** is enabled. Magic-link sign-in is used (no passwords).
 4. Under **Authentication → URL configuration**, set the Site URL to your Netlify address and add it to the redirect list.
-5. Under **Project settings → API**, copy the **Project URL** and the **anon public** key.
+5. Under **Project settings → API keys**, copy the **Project URL** and the **publishable** key (`sb_publishable_...`). The older `anon` JWT key also works, but the publishable key is the current one.
 6. Put them in `config.js`:
 
 ```js
 window.SR_CONFIG = {
   supabaseUrl: 'https://xxxx.supabase.co',
-  supabaseAnonKey: 'eyJ...'
+  supabaseAnonKey: 'sb_publishable_...'
 };
 ```
 
-The anon key is meant to be public; the row-level security policy is what protects the data.
+The publishable key is meant to be public; the row-level security policy is what protects the data.
 Commit, merge, and the deployed site will show a sign-in box under Settings → Account.
 
 ## How sync behaves

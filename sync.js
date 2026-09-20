@@ -8,7 +8,7 @@ const enabled = !!(cfg.supabaseUrl && cfg.supabaseAnonKey);
 let client = null, user = null, pushTimer = null, lastPushed = 0;
 
 function loadLib() {
-  return new Promise((res, rej) => { if (window.supabase) return res(); const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js'; s.onload = res; s.onerror = rej; document.head.append(s); });
+  return new Promise((res, rej) => { if (window.supabase) return res(); const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js'; s.onload = res; s.onerror = rej; document.head.append(s); });
 }
 async function init() {
   if (!enabled) return;
