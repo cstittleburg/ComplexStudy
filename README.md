@@ -16,13 +16,14 @@ GitHub Pages). Progress (XP, streak, mastery per step, muddy points) is saved in
 | Mode | What it practices |
 | --- | --- |
 | Start a shift | One random unfolding case (all six steps) plus quick rounds: Who first?, a trend, an ABG, delegation. About 12 minutes. |
-| Pick a case | 16 unfolding cases from the course: asthma, COPD, pneumonia→sepsis, ARDS/respiratory failure, PE, stroke, ICP/TBI, spinal cord injury, autonomic dysreflexia, seizure, burns, DKA, septic shock, post-op hemorrhage, dehydration in an older adult, fluid overload. |
+| Pick a case | 7 unfolding cases taken directly from the professor's case-study packets: acute asthma, COPD exacerbation, pneumonia, acute respiratory failure (respiratory packet) and femur fracture with hemorrhagic shock, stroke with feeding-tube medications, anastomotic leak with septic shock (Week 1 NGN packet). Answer keys are the professor's. |
 | Who first? | Four clients, choose who to see first, then name the cue that decided it. Randomly assembled from 50 patient cards. |
 | Trend Detective | Two columns of a flowsheet with fresh numbers every time. Better, worse, same? Then name the threat. |
 | ABG Decoder | Randomly generated blood gases: disorder, compensation, cause, action. |
 | Bow-tie builder | The NGN drag-and-drop item, tap style. |
 | What stays with the RN? | Delegation calls. |
-| Rhyme & Reason | 44 mnemonic and rhyme cards, with a quiz-me mode. |
+| Quick Fire | Fast questions from the class Kahoot. |
+| Rhyme & Reason | 55 mnemonic and rhyme cards, with a quiz-me mode. |
 | Muddy points | Everything missed, ready to replay. |
 
 Every wrong answer gets a short, kind explanation and the case continues to the next step,
@@ -33,11 +34,12 @@ exactly like the exam. Names, ages and answer order change on every replay.
 ```
 index.html            page + styles
 app.js                the engine (item types, modes, scoring, chart panel)
-content/frameworks.js thinking models (CJMM, Priority Lens, SBAR) — add new frameworks here
+content/frameworks.js thinking models (CJMM, Priority Lens, A-to-I survey, SBAR) — add new frameworks here
 content/resp.js       respiratory cases
 content/neuro.js      neuro cases
 content/fluids.js     burns, fluids/electrolytes, sepsis, lifespan cases
-content/pools.js      Who-first cards, trend templates, ABG data, rhyme deck
+content/week1.js      Week 1 NGN packet cases (trauma, stroke meds, anastomotic leak)
+content/pools.js      Who-first cards, trend templates, ABG data, quick-fire questions, rhyme deck
 docs/ADDING-CASES.md  how to add cases, cards, rhymes, or a new framework
 ```
 

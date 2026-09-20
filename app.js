@@ -342,6 +342,7 @@ function questionCard({ item, pt = {}, framework = 'cjmm', stepIndex, key, label
   if (extraTop) card.append(extraTop);
   if (step) card.append(el('div', { class: 'stepchip' }, el('span', { class: 'num' }, (stepIndex ?? fw.steps.indexOf(step)) + 1), step.label, el('span', { class: 'q' }, '· ' + step.question)));
   card.append(el('p', { class: 'prompt' }, fill(item.prompt, pt)));
+  if (item.unverified) card.append(el('p', { class: 'hint' }, 'The course packet did not mark an answer for this question, so this key is a best reading of the packet. Check it against the class answer key.'));
   const box = el('div'); card.append(box);
   const r = ItemTypes[item.type](item, box, pt);
   const actions = el('div', { class: 'actions' });
@@ -564,6 +565,16 @@ function abgRound(onDone) {
   nextQ();
 }
 
+function quickFireRound(onDone, n = 3) {
+  const qs = sample(QUICKFIRE, n); const scores = []; let i = 0;
+  function nextQ() {
+    if (i >= qs.length) return onDone(scores.reduce((a, b) => a + b, 0) / scores.length);
+    const q = qs[i]; const item = { type: q.multi ? 'sata' : 'single', step: 'action', prompt: q.q, options: q.options, rationale: q.rationale, n: q.multi ? q.options.filter(o => o.ok).length : undefined };
+    show(plain('Quick Fire', 'Question ' + (i + 1) + ' of ' + qs.length + ' · from the class Kahoot', questionCard({ item, stepIndex: 4, key: 'qf:' + q.q.slice(0, 40), label: 'Quick fire: ' + q.q.slice(0, 60), nextLabel: i === qs.length - 1 ? 'Done' : 'Next', onDone: s => { scores.push(s); i++; nextQ(); } })));
+  }
+  nextQ();
+}
+
 function bowtieRound(onDone) {
   const c = pick(CASES.filter(x => x.bowtie)); const pt = makePatient(c);
   const chart = chartPanel(c, pt); if (c.bowtie.chart) chart.apply(c.bowtie.chart);
@@ -608,7 +619,7 @@ function settingsView() {
     el('div', { class: 'setting' }, el('div', {}, el('strong', {}, 'Theme'), el('div', { class: 'hint' }, 'System follows your device.')), theme),
     el('div', { class: 'setting' }, el('div', {}, el('strong', {}, 'Focus sprint length'), el('div', { class: 'hint' }, 'The ⏱ button starts a countdown. When it ends, take a break.')), tm),
     el('div', { class: 'setting' }, el('div', {}, el('strong', {}, 'Reset progress'), el('div', { class: 'hint' }, 'Clears XP, streak, mastery and muddy points on this device.')), el('button', { class: 'btn sm', type: 'button', onclick: () => { if (confirm('Reset all progress on this device?')) { S = JSON.parse(JSON.stringify(DEFAULT)); save(); updateHeader(); toast('Progress reset'); homeView(); } } }, 'Reset')),
-    el('p', { class: 'hint', style: 'margin-top:14px' }, 'Progress is saved in this browser only. Content: ' + CASES.length + ' cases, ' + WHO_FIRST.length + ' priority cards, ' + TREND_TEMPLATES.length + ' trend templates, ' + RHYMES.length + ' rhyme cards.'))));
+    el('p', { class: 'hint', style: 'margin-top:14px' }, 'Progress is saved in this browser only. Content: ' + CASES.length + ' cases, ' + WHO_FIRST.length + ' priority cards, ' + TREND_TEMPLATES.length + ' trend templates, ' + QUICKFIRE.length + ' quick-fire questions, ' + RHYMES.length + ' rhyme cards.'))));
 }
 
 /* ---------------- focus timer ---------------- */
@@ -631,6 +642,7 @@ const Modes = [
   { id: 'abg', name: 'ABG Decoder', tag: 'Analyze cues', d: 'Randomly generated blood gases. Name the disorder, the compensation, the cause, and the action.', start() { abgRound(() => homeView()); } },
   { id: 'bowtie', name: 'Bow-tie builder', tag: 'NGN item', d: 'Condition, two actions, two parameters to monitor. Drag-and-drop practice, tap style.', start() { bowtieRound(() => homeView()); } },
   { id: 'delegation', name: 'What stays with the RN?', tag: 'Delegation', d: 'Quick calls on what cannot be delegated.', start() { delegationRound(() => homeView()); } },
+  { id: 'quickfire', name: 'Quick Fire', tag: 'Class Kahoot', d: 'Five fast questions from the class Kahoot. Assess before you act.', start() { quickFireRound(() => homeView(), 5); } },
   { id: 'rhymes', name: 'Rhyme & Reason', tag: RHYMES.length + ' cards', d: 'The mnemonics, rhymes and heuristics behind every case. Flip, or quiz yourself.', start: rhymesView },
   { id: 'muddy', name: 'Muddy points', tag: 'Review', d: 'Everything you have missed, ready to replay.', start: muddyView }
 ];
@@ -644,6 +656,7 @@ function runShift() {
     { name: 'Trend Detective', run: d => trendRound(d) },
     { name: 'ABG Decoder', run: d => abgRound(d) },
     { name: 'Delegation', run: d => delegationRound(d) },
+    { name: 'Quick Fire', run: d => quickFireRound(d, 3) },
     { name: 'Who first?', run: d => whoFirstRound(d) }
   ];
   const results = []; let i = 0; const bar = $('#shiftbar'); bar.hidden = false;

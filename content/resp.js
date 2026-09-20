@@ -260,24 +260,16 @@ window.CASES.push({
       ],
       rationale: 'Improve oxygenation, decrease work of breathing, thin secretions, and secure access for IV antibiotics.' },
     { step: 'action', type: 'sata', n: 4,
-      chart: {
-        notes: [{ time: '0900', text: 'Restless, less alert, answers in monosyllables. Diaphoretic, prominent accessory muscle use, nasal flaring. States "I can\'t get enough air." Admitted to MICU: pneumonia with respiratory compromise.' }],
-        vitals: { cols: ['0900'], rows: [['Temp', '101.7 °F'], ['HR', '120'], ['RR', '32'], ['BP', '92/54'], ['SpO₂', '88% on 50% VM']] },
-        labs: [['pH (0900)', '7.25', '7.35–7.45'], ['PaCO₂ (0900)', '48', '35–45'], ['HCO₃⁻ (0900)', '20', '22–26'], ['PaO₂ (0900)', '70', '80–100'], ['WBC (0900)', '22,000', '4.5–10.5 k']],
-        diagnostics: ['Chest X-ray: diffuse bilateral infiltrates. The resident says "it\'s completely whited out."', 'Blood and urine cultures ordered.']
-      },
-      prompt: '0900: {name} has deteriorated. What revisions in care will the nurse plan? Select the 4 that apply.',
+      prompt: 'From the list, identify the top 4 nursing interventions that are priority to implement for {name}.',
       options: [
-        { t: 'Activate the Rapid Response Team', ok: true, why: 'Marked deterioration; get help now.' },
-        { t: 'Prepare for intubation', ok: true, why: 'Profound respiratory acidosis with exhaustion.' },
-        { t: 'Request an order to increase the oxygen flow rate', ok: true, why: 'SpO₂ 88% on 50%: bridge while preparing to intubate.' },
-        { t: 'Obtain an order for a lactate level', ok: true, why: 'HR > 90, RR > 22, fever: sepsis criteria met. Lactate guides resuscitation.' },
-        { t: 'Assess O₂ saturation once every shift', ok: false, why: 'Needs continuous monitoring.' },
-        { t: 'Encourage ambulation', ok: false, why: 'He cannot breathe.' },
-        { t: 'Prepare for defibrillation', ok: false, why: 'No lethal rhythm.' },
-        { t: 'Administer ipratropium and albuterol four times a day', ok: false, why: 'Scheduled nebs will not fix respiratory failure.' }
+        { t: 'Increase oxygen to 50% per Venturi mask', ok: true, why: 'Supplemental oxygen increases the oxygen available for gas exchange and perfusion.' },
+        { t: 'Encourage oral fluids of at least 8 glasses of water per day', ok: true, why: 'Decreases the viscosity of secretions so they are easier to mobilize.' },
+        { t: 'Promote turning side to side, coughing, and deep breathing every two hours while awake', ok: true, why: 'Increases lung expansion and mobilizes secretions. "If it sits, it either clots or cultures."' },
+        { t: 'Elevate the head of the bed 30–45 degrees', ok: true, why: 'Better chest expansion and gas exchange.' },
+        { t: 'Administer albuterol 2 puffs by inhalation PRN every 4–6 hours as prescribed', ok: false, why: 'Not among the four priorities for improving oxygenation in this client.' },
+        { t: 'Instruct on incentive spirometer use every two hours while awake', ok: false, why: 'Helpful, but not one of the top four here.' }
       ],
-      rationale: 'ABGs show profound respiratory acidosis (pH 7.25, PaCO₂ 48) with hypoxemia on 50% oxygen and a whited-out X-ray. Escalate: rapid response, prepare to intubate, increase oxygen, and check lactate because sepsis criteria are met.' },
+      rationale: 'Priority nursing interventions are directed at improving oxygenation and decreasing work of breathing: elevate the head of the bed, add supplemental oxygen, increase fluids to thin secretions, and turn, cough and deep-breathe to expand the lungs and mobilize secretions. Decreased mobility promotes stasis of secretions: "If it sits, it either clots or cultures."' },
     { step: 'evaluate', type: 'sata', n: 5,
       prompt: 'Later in the week: which findings tell the nurse the interventions for pneumonia were effective? Select the 5 that apply.',
       options: [
@@ -353,14 +345,14 @@ window.CASES.push({
       ],
       rationale: 'After intubation: sedate, confirm tube placement by X-ray, treat the infection, check the rhythm. Suction PRN, never on a schedule. Keep the head of bed up.' },
     { step: 'action', type: 'sata', n: 3,
-      chart: { orders: ['Nursing: insert urinary catheter; suction ETT PRN; titrate O₂ to keep SpO₂ ≥ 95%', 'Medications: start 0.9% NaCl at 75 mL/hr; ceftriaxone IVPB q12h; midazolam 2–4 mg IVP q1h PRN agitation; acetaminophen 650 mg PR q8h PRN temp > 100.8 °F', 'Monitoring: 12-lead ECG; chest X-ray; blood gas in 30 minutes'] },
+      chart: { orders: ['Nursing: insert urinary catheter; suction ETT PRN; titrate O₂ to keep SpO₂ ≥ 95%', 'Medications: start 0.9% NaCl at 75 mL/hr; amoxicillin 500 mg IVPB q12h; midazolam 2–4 mg IVP q1h PRN agitation; acetaminophen 650 mg PR q8h PRN temp > 100.8 °F', 'Monitoring: 12-lead ECG; chest X-ray; blood gas in 30 minutes'] },
       prompt: 'The nurse receives orders. Which 3 orders should the nurse implement first?',
       options: [
         { t: 'Call for chest X-ray', ok: true, why: 'Confirm ETT placement.' },
         { t: 'Start IV of 0.9% normal saline at 75 mL/hr', ok: true, why: 'No venous access yet; needed for every medication.' },
         { t: 'Midazolam 2–4 mg IVP for agitation', ok: true, why: 'Restless, BP 180/90: risk of self-extubation.' },
         { t: 'Perform 12-lead ECG', ok: false, why: 'Next, after the three above.' },
-        { t: 'Antibiotic IVPB', ok: false, why: 'Needs IV access first; next tier.' },
+        { t: 'Amoxicillin 500 mg IVPB every 12 hours', ok: false, why: 'Next, after IV access is established.' },
         { t: 'Titrate oxygen to keep SpO₂ ≥ 95%', ok: false, why: 'Already 96%; no change needed.' },
         { t: 'Suction endotracheal tube', ok: false, why: 'No indication right now.' },
         { t: 'Blood gas in 30 minutes', ok: false, why: 'Not yet due.' },
@@ -380,83 +372,4 @@ window.CASES.push({
       ],
       rationale: 'Evaluate each parameter against the previous value, not against normal. The one that declined (SpO₂) is the one you act on next.' }
   ]
-});
-
-window.CASES.push({
-  id: 'resp-pe',
-  title: 'Sudden dyspnea after surgery',
-  system: 'Respiratory',
-  setting: 'Orthopedic Unit',
-  patient: { sex: 'F', ageRange: [48, 66] },
-  tagline: 'Post-op day 2 and "something is wrong, I can\'t breathe."',
-  chart: {
-    profile: 'Post-op day 2, right total knee arthroplasty. History: obesity, oral contraceptive use until last year, smoker. Refused sequential compression devices overnight.',
-    notes: [
-      { time: '0640', text: 'Called to room by call light. {name} sitting bolt upright, anxious, reports sudden sharp right-sided chest pain that is worse with breathing and "a feeling that something terrible is about to happen." Coughed once with a streak of blood. Right calf swollen and tender compared to left. Skin pale and diaphoretic.' }
-    ],
-    vitals: { cols: ['0200', '0640'], rows: [['Temp', '98.9', '99.1'], ['HR', '84', '124'], ['RR', '16', '30'], ['BP', '128/76', '104/62'], ['SpO₂', '96% RA', '88% RA']] },
-    labs: [['D-dimer', 'elevated', 'normal'], ['pH', '7.49', '7.35–7.45'], ['PaCO₂', '30', '35–45'], ['PaO₂', '62', '80–100'], ['HCO₃⁻', '23', '22–26']]
-  },
-  items: [
-    { step: 'recognize', type: 'highlight',
-      prompt: 'Click to highlight the cues in the note that require immediate follow-up.',
-      text: [{ t: 'Sitting bolt upright, anxious', ok: true, why: 'Distress and a sense of doom.' }, ', reports ', { t: 'sudden sharp right-sided chest pain worse with breathing', ok: true, why: 'Pleuritic chest pain.' }, ' and a feeling that something terrible is about to happen. ', { t: 'Coughed once with a streak of blood', ok: true, why: 'Hemoptysis.' }, '. ', { t: 'Right calf swollen and tender', ok: true, why: 'Deep vein thrombosis: the likely source.' }, ' compared to left. Dressing on the knee is dry and intact. ', { t: 'Skin pale and diaphoretic', ok: true, why: 'Poor perfusion, sympathetic response.' }, '. Ate 50% of dinner last evening.'],
-      rationale: 'Sudden dyspnea, pleuritic pain, hemoptysis, anxiety and a swollen calf in a post-op client are the textbook picture of pulmonary embolism. The dressing and the dinner are noise.' },
-    { step: 'analyze', type: 'matrix', cols: ['Risk factor for PE', 'Not a risk factor'],
-      prompt: 'For each item from the history, specify whether it is a risk factor for pulmonary embolism.',
-      rows: [
-        { t: 'Recent orthopedic surgery', ans: 0, why: 'Trauma to vessels + immobility.' },
-        { t: 'Refused sequential compression devices', ans: 0, why: 'Venous stasis.' },
-        { t: 'Obesity', ans: 0, why: 'Hypercoagulability and stasis.' },
-        { t: 'Smoking', ans: 0, why: 'Vessel injury and clotting.' },
-        { t: 'History of oral contraceptive use', ans: 0, why: 'Estrogen increases clotting.' },
-        { t: 'Ate 50% of dinner', ans: 1, why: 'Irrelevant.' },
-        { t: 'Blood type O', ans: 1, why: 'Not a recognized risk factor for this exam.' }
-      ],
-      rationale: 'Virchow\'s triad: stasis (immobility, no SCDs), vessel injury (surgery), and hypercoagulability (estrogen, smoking, obesity).' },
-    { step: 'prioritize', type: 'cloze',
-      prompt: 'Complete the sentence.',
-      parts: ['{name} is most likely experiencing a ', { options: ['pulmonary embolism', 'myocardial infarction', 'pneumothorax', 'panic attack'], ans: 0 }, ', and the ABG shows ', { options: ['respiratory alkalosis from hyperventilation', 'respiratory acidosis from hypoventilation', 'metabolic acidosis from shock', 'a normal result'], ans: 0 }, '.'],
-      rationale: 'pH 7.49 with PaCO₂ 30: she is blowing off CO₂ (respiratory alkalosis) while remaining hypoxemic (PaO₂ 62). That combination, with pleuritic pain, hemoptysis and a DVT, is PE until proven otherwise. A panic attack does not drop PaO₂ to 62.' },
-    { step: 'generate', type: 'sata', n: 5,
-      prompt: 'Which interventions should the nurse anticipate? Select the 5 that apply.',
-      options: [
-        { t: 'Apply oxygen and titrate to SpO₂ goal', ok: true, why: 'Correct the hypoxemia.' },
-        { t: 'Keep in high-Fowler\'s position', ok: true, why: 'Eases breathing.' },
-        { t: 'Establish IV access and prepare for IV heparin', ok: true, why: 'Anticoagulation prevents clot extension.' },
-        { t: 'Prepare for CT pulmonary angiography', ok: true, why: 'Preferred diagnostic test.' },
-        { t: 'Continuous cardiac monitoring and frequent vital signs', ok: true, why: 'Watch for shock and dysrhythmia.' },
-        { t: 'Massage the swollen calf to improve circulation', ok: false, why: 'Could dislodge more clot.' },
-        { t: 'Ambulate in the hall to prevent further clots', ok: false, why: 'Bed rest during the acute phase.' },
-        { t: 'Give aspirin 81 mg as the anticoagulant', ok: false, why: 'Aspirin is antiplatelet; PE needs heparin or a DOAC.' }
-      ],
-      rationale: 'Oxygen, positioning, IV access, anticoagulation, monitoring, and imaging. Never massage a DVT, and rest until anticoagulated.' },
-    { step: 'action', type: 'order',
-      prompt: 'Place the nurse\'s actions in the order they should be performed.',
-      items: [
-        { t: 'Apply oxygen and raise the head of the bed' },
-        { t: 'Notify the provider / rapid response with SBAR including the trend' },
-        { t: 'Obtain IV access and prepare anticoagulant as ordered' },
-        { t: 'Send for CT pulmonary angiography as ordered' },
-        { t: 'Teach about bleeding precautions with anticoagulants' }
-      ],
-      rationale: 'Airway and breathing first, then escalate with the trend (HR 84 → 124, SpO₂ 96 → 88), then treatment, then diagnostics, then teaching.' },
-    { step: 'evaluate', type: 'trend',
-      prompt: 'Two hours after oxygen and heparin: for each finding, specify whether it improved, declined or is unchanged.',
-      rows: [
-        { t: 'Heart rate', before: '124', after: '98', ans: 'improved', why: 'Less strain.' },
-        { t: 'SpO₂', before: '88% RA', after: '95% on 4 L', ans: 'improved', why: 'Oxygenation restored.' },
-        { t: 'Chest pain', before: '8/10 pleuritic', after: '3/10', ans: 'improved', why: 'Less inflammation.' },
-        { t: 'Calf swelling', before: 'swollen, tender', after: 'swollen, tender', ans: 'unchanged', why: 'DVT takes time.' },
-        { t: 'Gums', before: 'no bleeding', after: 'oozing when brushing', ans: 'declined', why: 'Heparin side effect: report and check aPTT.' }
-      ],
-      rationale: 'Improvement is shown by the original cues resolving. A new cue (gum bleeding) is a new hypothesis: anticoagulant excess. Check aPTT and report.' }
-  ],
-  bowtie: {
-    prompt: 'Complete the bow-tie for {name} at 0640.',
-    conditions: [{ t: 'Pulmonary embolism', ok: true }, { t: 'Pneumonia', ok: false }, { t: 'Acute asthma', ok: false }, { t: 'Cardiac tamponade', ok: false }],
-    actions: [{ t: 'Administer oxygen', ok: true }, { t: 'Prepare anticoagulant therapy', ok: true }, { t: 'Massage the calf', ok: false }, { t: 'Encourage ambulation', ok: false }, { t: 'Administer a cough suppressant', ok: false }],
-    params: [{ t: 'SpO₂ and respiratory rate', ok: true }, { t: 'Signs of bleeding / aPTT', ok: true }, { t: 'Peak flow', ok: false }, { t: 'Sputum color', ok: false }, { t: 'Bowel sounds', ok: false }],
-    rationale: 'PE: sudden dyspnea, pleuritic pain, hemoptysis, hypoxemia, DVT source. Actions: oxygen and anticoagulation. Monitor oxygenation and for bleeding once anticoagulated.'
-  }
 });
