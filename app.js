@@ -32,10 +32,10 @@ const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 
 /* ---------------- persistent state ---------------- */
 const KEY = 'shift-ready-v1';
-const DEFAULT = { xp: 0, streak: { last: null, count: 0 }, shifts: 0, answered: 0, perfect: 0, mastery: {}, muddy: {}, badges: [], settings: { sound: false, theme: 'system', timerMin: 10 }, seen: {} };
+const DEFAULT = { xp: 0, streak: { last: null, count: 0 }, shifts: 0, answered: 0, perfect: 0, mastery: {}, muddy: {}, badges: [], settings: { sound: false, theme: 'system', timerMin: 10 }, seen: {}, courses: {}, activeCourse: null, events: [], ratings: [], updatedAt: 0 };
 let S = load();
 function load() { try { const raw = localStorage.getItem(KEY); if (raw) return Object.assign({}, DEFAULT, JSON.parse(raw)); } catch (e) { } return JSON.parse(JSON.stringify(DEFAULT)); }
-function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }
+function save() { S.updatedAt = Date.now(); try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } if (window.SR && SR.hooks.onSave) SR.hooks.onSave(S); }
 function applyTheme() { const t = S.settings.theme; if (t === 'system') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t); }
 applyTheme();
 
@@ -76,8 +76,13 @@ function confetti() {
 }
 
 /* ---------------- scoring / mastery ---------------- */
-function record({ framework = 'cjmm', step, score, key, label }) {
+let currentMode = null;          // set by whichever mode is running; logged with every answer
+function setMode(m) { currentMode = m; }
+function record({ framework = 'cjmm', step, score, key, label, ms }) {
   S.answered++;
+  const wasMuddy = !!(key && S.muddy[key]);
+  S.events.push({ t: Date.now(), c: S.activeCourse, m: currentMode, k: key, f: framework, s: step, sc: +score.toFixed(2), ms: ms || 0, re: wasMuddy ? 1 : 0 });
+  if (S.events.length > 6000) S.events.splice(0, S.events.length - 6000);
   const xp = Math.round(score * 10) + (score === 1 ? 3 : 0);
   S.xp += xp;
   if (score === 1) S.perfect++;
@@ -344,7 +349,7 @@ function questionCard({ item, pt = {}, framework = 'cjmm', stepIndex, key, label
   card.append(el('p', { class: 'prompt' }, fill(item.prompt, pt)));
   if (item.unverified) card.append(el('p', { class: 'hint' }, 'The packet did not include an answer key for this question; the key here was supplied from the course materials.'));
   const box = el('div'); card.append(box);
-  const r = ItemTypes[item.type](item, box, pt);
+  const r = ItemTypes[item.type](item, box, pt); const t0 = Date.now();
   const actions = el('div', { class: 'actions' });
   const check = el('button', { class: 'btn primary', type: 'button' }, 'Check');
   const next = el('button', { class: 'btn', type: 'button', hidden: true }, nextLabel + ' →');
@@ -352,7 +357,7 @@ function questionCard({ item, pt = {}, framework = 'cjmm', stepIndex, key, label
   check.addEventListener('click', () => {
     if (done) return; done = true; box.classList.add('graded');
     let res; try { res = r.grade(); } catch (err) { console.error(err); res = { score: 0, misses: ['This item could not be graded (a content error). You can keep going.'] }; }
-    const xp = record({ framework, step: item.step, score: res.score, key, label });
+    const xp = record({ framework, step: item.step, score: res.score, key, label, ms: Date.now() - t0 });
     showFeedback(box, res, item, xp, pt); check.hidden = true; next.hidden = false; next.focus();
     next.addEventListener('click', () => onDone(res.score), { once: true });
   });
@@ -402,35 +407,42 @@ function show(node) { app.innerHTML = ''; const v = el('div', { class: 'view' },
 function masteryPct(fw, step) { const m = S.mastery[fw + ':' + step]; return m && m.n ? Math.round(100 * m.s / m.n) : 0; }
 
 function homeView() {
-  const fw = FRAMEWORKS.cjmm;
-  const mastery = el('div', { class: 'mastery' });
-  fw.steps.forEach((s, i) => { const p = masteryPct('cjmm', s.id); const m = S.mastery['cjmm:' + s.id]; mastery.append(el('button', { class: 'mstep', type: 'button', onclick: () => toast(s.rhyme) }, el('div', { class: 'l' }, (i + 1) + '. ' + s.label), el('div', { class: 'bar' }, el('div', { style: 'width:' + p + '%' })), el('div', { class: 'pct' }, m ? p + '% · ' + m.n : 'not yet'))); });
+  const course = SR.courses.active(); if (!course) return SR.courses.picker();
+  const fwId = (course.frameworks && course.frameworks[0]) || 'cjmm'; const fw = FRAMEWORKS[fwId] || FRAMEWORKS.cjmm;
+  const mastery = el('div', { class: 'mastery', style: fw.steps.length > 6 ? 'grid-template-columns:repeat(auto-fit,minmax(110px,1fr))' : '' });
+  fw.steps.forEach((s, i) => { const p = masteryPct(fw.id, s.id); const m = S.mastery[fw.id + ':' + s.id]; mastery.append(el('button', { class: 'mstep', type: 'button', onclick: () => toast(s.rhyme || s.question || s.label) }, el('div', { class: 'l' }, (i + 1) + '. ' + s.label), el('div', { class: 'bar' }, el('div', { style: 'width:' + p + '%' })), el('div', { class: 'pct' }, m ? p + '% · ' + m.n : 'not yet'))); });
   const modes = el('div', { class: 'modes' });
-  for (const m of Modes) if (!m.hidden) modes.append(el('button', { class: 'mode', type: 'button', onclick: () => m.start() }, el('span', { class: 'k' }, m.name), el('span', { class: 'd' }, m.d), el('span', { class: 'tag' }, m.tag)));
+  const content = SR.content();
+  for (const m of Modes) { if (m.hidden) continue; if (m.method && course.methods && !course.methods.includes(m.method)) continue; const ok = !m.available || m.available(content); modes.append(el('button', { class: 'mode' + (ok ? '' : ' off'), type: 'button', onclick: () => ok ? m.start() : toast(m.emptyMsg || 'Nothing here for this course yet.') }, el('span', { class: 'k' }, m.name), el('span', { class: 'd' }, m.d), el('span', { class: 'tag' }, ok ? (typeof m.tag === 'function' ? m.tag(content) : m.tag) : 'no content yet'))); }
   const badges = el('div', { class: 'badges' }); BADGES.forEach(b => badges.append(el('span', { class: 'badge' + (S.badges.includes(b.id) ? '' : ' locked'), title: b.d }, (S.badges.includes(b.id) ? '★ ' : '☆ ') + b.name)));
   const muddyN = Object.keys(S.muddy).length;
   const greet = S.shifts === 0 ? 'Welcome to your first shift.' : `Shift ${S.shifts + 1}. ${pick(['Notice the change.', 'Name the threat.', 'Act, then reassess.', 'Map it, don\'t memorize it.'])}`;
+  const canShift = content.cases.length > 0;
+  const rhyme = content.rhymes.length ? pick(content.rhymes).back.split('\n')[0] : (fw.mnemonic || '');
   show(el('div', {},
     el('div', { class: 'hero' },
-      el('div', { class: 'card lift' }, el('div', { class: 'eyebrow' }, 'Complex Healthcare Problems Across the Lifespan'), el('h1', {}, greet), el('p', { class: 'lead' }, 'Short, real-feeling cases from your course, walked through the Clinical Judgment Measurement Model one step at a time. One shift takes about twelve minutes. Then take a break; you earned it.'),
-        el('div', { class: 'row', style: 'margin-top:16px' }, el('button', { class: 'btn primary', type: 'button', onclick: () => Modes[0].start() }, '▶ Start a shift'), el('button', { class: 'btn', type: 'button', onclick: () => caseListView() }, 'Pick a case'), muddyN ? el('button', { class: 'btn', type: 'button', onclick: () => muddyView() }, `Muddy points (${muddyN})`) : null),
-        el('div', { class: 'rhymebox' }, '“' + pick(fw.steps).rhyme + '”')),
-      el('div', { class: 'card' }, el('div', { class: 'eyebrow' }, 'Your map of the model'), el('p', { class: 'hint', style: 'margin:4px 0 10px' }, 'Tap a step for its rhyme. Bars fill as you get items right.'), mastery,
+      el('div', { class: 'card lift' }, el('div', { class: 'row spread' }, el('div', { class: 'eyebrow' }, course.name), el('button', { class: 'btn sm ghost', type: 'button', onclick: () => SR.courses.picker() }, 'Switch course')), el('h1', {}, greet), el('p', { class: 'lead' }, course.blurb || 'Short practice sessions built from your course material. One shift takes about twelve minutes. Then take a break; you earned it.'),
+        el('div', { class: 'row', style: 'margin-top:16px' }, canShift ? el('button', { class: 'btn primary', type: 'button', onclick: () => Modes[0].start() }, '▶ Start a shift') : el('button', { class: 'btn primary', type: 'button', onclick: () => SR.courses.settings() }, '＋ Add content'), content.cases.length ? el('button', { class: 'btn', type: 'button', onclick: () => caseListView() }, 'Pick a case') : null, muddyN ? el('button', { class: 'btn', type: 'button', onclick: () => muddyView() }, `Muddy points (${muddyN})`) : null, el('button', { class: 'btn', type: 'button', onclick: () => SR.insights.view() }, 'Insights')),
+        rhyme ? el('div', { class: 'rhymebox' }, '“' + rhyme + '”') : null),
+      el('div', { class: 'card' }, el('div', { class: 'eyebrow' }, 'Your map of the model · ' + fw.short), el('p', { class: 'hint', style: 'margin:4px 0 10px' }, 'Tap a step for its rhyme. Bars fill as you get items right.'), mastery,
         el('div', { class: 'scoreline', style: 'margin-top:14px' }, el('div', { class: 's' }, el('div', { class: 'b' }, S.shifts), el('div', { class: 'l' }, 'shifts')), el('div', { class: 's' }, el('div', { class: 'b' }, S.answered), el('div', { class: 'l' }, 'items')), el('div', { class: 's' }, el('div', { class: 'b' }, S.answered ? Math.round(100 * S.perfect / S.answered) + '%' : '—'), el('div', { class: 'l' }, 'perfect'))))),
-    el('h2', { style: 'margin:6px 0 12px' }, 'Practice modes'), modes,
+    el('div', { class: 'row spread', style: 'margin:6px 0 12px' }, el('h2', {}, 'Practice modes'), el('button', { class: 'btn sm ghost', type: 'button', onclick: () => SR.courses.settings() }, 'Course settings')), modes,
     el('div', { class: 'card', style: 'margin-top:22px' }, el('div', { class: 'eyebrow' }, 'Badges'), el('div', { style: 'height:8px' }), badges)
   ));
 }
 
 function caseListView() {
   const list = el('div', { class: 'caselist' });
-  for (const c of CASES) list.append(el('button', { class: 'casecard', type: 'button', onclick: () => runCase(c) }, el('span', { class: 'sys' }, c.system), el('span', { class: 't' }, c.title), el('span', { class: 'tl' }, c.tagline), el('span', { class: 'done' }, S.seen[c.id] ? `played ${S.seen[c.id]}× · best ${S.seen[c.id + ':best'] || 0}%` : 'new')));
+  const CC = SR.content().cases;
+  if (!CC.length) { show(el('div', {}, backRow('Pick a case'), el('div', { class: 'card' }, el('p', {}, 'This course has no unfolding cases yet. Cases are built from your course packets; export the course spec from the course settings and ask Claude to build a case pack, or study with flashcards and practice questions in the meantime.')))); return; }
+  for (const c of CC) list.append(el('button', { class: 'casecard', type: 'button', onclick: () => runCase(c) }, el('span', { class: 'sys' }, c.system), el('span', { class: 't' }, c.title), el('span', { class: 'tl' }, c.tagline), el('span', { class: 'done' }, S.seen[c.id] ? `played ${S.seen[c.id]}× · best ${S.seen[c.id + ':best'] || 0}%` : 'new')));
   show(el('div', {}, backRow('Pick a case'), el('p', { class: 'hint' }, 'Names, ages, and answer order change every time. The clinical story is from your course.'), list));
 }
 function backRow(title, extra) { return el('div', { class: 'row spread', style: 'margin-bottom:14px' }, el('h1', {}, title), el('div', { class: 'row' }, extra, el('button', { class: 'btn sm', type: 'button', onclick: () => homeView() }, '← Home'))); }
 
 /* ---------------- case runner ---------------- */
 function runCase(c, opts = {}) {
+  setMode('case');
   const pt = makePatient(c); const fwId = c.framework || 'cjmm'; const fw = FRAMEWORKS[fwId];
   const items = c.items.slice(); if (c.bowtie) items.push({ ...c.bowtie, type: 'bowtie', step: null, bonus: true });
   const scores = []; let idx = 0;
@@ -476,8 +488,10 @@ function plain(title, sub, card, onBack) { return el('div', {}, el('div', { clas
 const LET = ['A', 'B', 'C', 'D'];
 
 function whoFirstRound(onDone) {
-  const urgent = pick(WHO_FIRST.filter(x => x.tier === 1));
-  const others = sample(WHO_FIRST.filter(x => x.tier !== 1), 3);
+  setMode('whofirst');
+  const POOL = SR.content().whofirst; const t0 = Date.now();
+  const urgent = pick(POOL.filter(x => x.tier === 1));
+  const others = sample(POOL.filter(x => x.tier !== 1), 3);
   const cards = shuffle([urgent, ...others]);
   let sel = null; let phase = 1; let s1 = 0;
   const card = el('div', { class: 'qcard' });
@@ -489,7 +503,7 @@ function whoFirstRound(onDone) {
   check.addEventListener('click', () => {
     if (phase !== 1) return; box.classList.add('graded');
     cards.forEach((x, i) => { const g = grid.children[i]; if (x === urgent) g.classList.add('hit'); else if (sel === i) g.classList.add('wrong'); g.append(el('span', { class: 'why' }, x.why)); });
-    s1 = sel !== null && cards[sel] === urgent ? 1 : 0; const xp = record({ framework: 'lens', step: 'wait', score: s1, key: 'wf:' + urgent.t.slice(0, 40), label: 'Who first: ' + urgent.t.slice(0, 60) });
+    s1 = sel !== null && cards[sel] === urgent ? 1 : 0; const xp = record({ framework: 'lens', step: 'wait', score: s1, key: 'wf:' + urgent.t.slice(0, 40), label: 'Who first: ' + urgent.t.slice(0, 60), ms: Date.now() - t0 });
     showFeedback(box, { score: s1, misses: s1 ? [] : ['First: ' + LET[cards.indexOf(urgent)] + '. ' + urgent.why] }, { rationale: 'The change from baseline is the clue. Abnormal-but-expected findings wait; new, worsening, or unstable findings do not.' }, xp, {});
     check.hidden = true; next.hidden = false; phase = 2;
   });
@@ -502,7 +516,8 @@ function whoFirstRound(onDone) {
 }
 
 function delegationRound(onDone) {
-  const d = pick(DELEGATION);
+  setMode('delegation');
+  const d = pick(SR.content().delegation);
   const item = { type: 'single', step: 'now', prompt: 'The RN is working with an unlicensed assistive person. Which of these must the RN address personally?', options: [{ t: d.rn, ok: true, why: d.why }, ...sample(d.others, 3).map(t => ({ t, ok: false, why: 'Stable client, routine task: can be delegated.' }))], rationale: 'Delegation is prioritization of nursing judgment. Assessment, teaching, evaluation, and unstable clients stay with the RN. “Assess, Teach, Evaluate, Unstable: stays on the RN’s table.”' };
   show(plain('What stays with the RN?', 'Delegation', questionCard({ item, framework: 'lens', stepIndex: 4, key: 'del:' + d.rn.slice(0, 40), label: 'Delegation: ' + d.rn.slice(0, 60), nextLabel: 'Done', onDone })));
 }
@@ -521,11 +536,12 @@ function genTrend(tpl) {
   return rows;
 }
 function trendRound(onDone) {
-  const tpl = pick(TREND_TEMPLATES); const rows = genTrend(tpl);
+  setMode('trend');
+  const TT = SR.content().trends; const tpl = pick(TT); const rows = genTrend(tpl);
   const item = { type: 'trend', step: 'evaluate', prompt: tpl.title + '. For each finding, is the client improving, declining, or unchanged?', rows, rationale: 'Compare each value to the previous one, not to the normal range. Then read all the rows together: they tell one story.' };
   let s1 = 0;
   const q2 = () => {
-    const threats = shuffle([tpl, ...sample(TREND_TEMPLATES.filter(t => t !== tpl), 3)]);
+    const threats = shuffle([tpl, ...sample(TT.filter(t => t !== tpl), 3)]);
     const item2 = { type: 'single', step: 'prioritize', prompt: 'What is the story these rows tell together?', options: threats.map(t => ({ t: t.threat, ok: t === tpl })), rationale: 'Cues that cluster tell a story. Name the threat, then the first action: ' + tpl.action + '.' };
     show(plain('Trend Detective', 'Step 2 · name the threat', questionCard({ item: item2, stepIndex: 2, key: 'trend2:' + tpl.id, label: 'Trend threat: ' + tpl.title, nextLabel: 'Done', onDone: s => onDone((s1 + s) / 2) })));
   };
@@ -544,6 +560,7 @@ function genABG() {
   return { d, comp, pH: pH.toFixed(2), co2, hco3, pao2 };
 }
 function abgRound(onDone) {
+  setMode('abg');
   const g = genABG(); const scores = [];
   const vals = el('div', { class: 'abgvals' },
     el('div', { class: 'v' + (g.pH < 7.35 ? ' lo' : g.pH > 7.45 ? ' hi' : '') }, el('div', { class: 'n' }, g.pH), el('div', { class: 'l' }, 'pH'), el('div', { class: 'ref' }, '7.35–7.45')),
@@ -566,7 +583,9 @@ function abgRound(onDone) {
 }
 
 function quickFireRound(onDone, n = 3) {
-  const qs = sample(QUICKFIRE, n); const scores = []; let i = 0;
+  setMode('quickfire');
+  const qs = sample(SR.content().quickfire, n); const scores = []; let i = 0;
+  if (!qs.length) { toast('No quick-fire questions in this course yet.'); return onDone(0); }
   function nextQ() {
     if (i >= qs.length) return onDone(scores.reduce((a, b) => a + b, 0) / scores.length);
     const q = qs[i]; const item = { type: q.multi ? 'sata' : 'single', step: 'action', prompt: q.q, options: q.options, rationale: q.rationale, n: q.multi ? q.options.filter(o => o.ok).length : undefined };
@@ -576,7 +595,9 @@ function quickFireRound(onDone, n = 3) {
 }
 
 function bowtieRound(onDone) {
-  const c = pick(CASES.filter(x => x.bowtie)); const pt = makePatient(c);
+  setMode('bowtie');
+  const withBT = SR.content().cases.filter(x => x.bowtie); if (!withBT.length) { toast('No bow-tie items in this course yet.'); return onDone(0); }
+  const c = pick(withBT); const pt = makePatient(c);
   const chart = chartPanel(c, pt); if (c.bowtie.chart) chart.apply(c.bowtie.chart);
   const item = { ...c.bowtie, type: 'bowtie' };
   const card = questionCard({ item, pt, key: c.id + '#bowtie', label: c.title + ' · Bow-tie', nextLabel: 'Done', onDone });
@@ -585,17 +606,18 @@ function bowtieRound(onDone) {
 
 /* ---------------- rhymes ---------------- */
 function rhymesView() {
-  const cats = [...new Set(RHYMES.map(r => r.cat))]; let active = 'All'; let quiz = false;
+  setMode('rhymes'); const R = SR.content().rhymes;
+  const cats = [...new Set(R.map(r => r.cat))]; let active = 'All'; let quiz = false;
   const filters = el('div', { class: 'filters' }); const deck = el('div', { class: 'deck' });
   function draw() {
     filters.innerHTML = ''; ['All', ...cats].forEach(c => filters.append(el('button', { class: 'btn sm' + (c === active ? ' on' : ''), type: 'button', onclick: () => { active = c; draw(); } }, c)));
     filters.append(el('button', { class: 'btn sm' + (quiz ? ' on' : ''), type: 'button', onclick: () => { quiz = !quiz; draw(); } }, quiz ? 'Quiz me: on' : 'Quiz me'));
     deck.innerHTML = '';
-    let list = RHYMES.filter(r => active === 'All' || r.cat === active); if (quiz) list = shuffle(list);
+    let list = R.filter(r => active === 'All' || r.cat === active); if (quiz) list = shuffle(list);
     for (const r of list) { const f = el('div', { class: 'flip', role: 'button', tabindex: 0 }, el('div', { class: 'inner' }, el('div', { class: 'face' }, el('div', { class: 'cat' }, r.cat), el('div', { class: 'f' }, r.front), el('div', { class: 'tip' }, quiz ? 'Say it out loud, then tap to check.' : 'Tap to flip')), el('div', { class: 'face back' }, el('div', { class: 'cat' }, r.cat), r.back, el('div', { class: 'tip' }, r.tip || '')))); const tog = () => f.classList.toggle('on'); f.addEventListener('click', tog); f.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); tog(); } }); deck.append(f); }
   }
   draw();
-  show(el('div', {}, backRow('Rhyme & Reason'), el('p', { class: 'hint' }, 'Mnemonics, rhymes and heuristics from the course. Tap a card to flip it. “Quiz me” shuffles the deck so you say the back before you see it.'), filters, deck));
+  show(el('div', {}, backRow('Rhyme & Reason', el('button', { class: 'btn sm', type: 'button', onclick: () => SR.courses.editor('flashcards') }, '+ Add a card')), el('p', { class: 'hint' }, 'Mnemonics, rhymes and heuristics for this course. Tap a card to flip it. “Quiz me” shuffles the deck so you say the back before you see it.'), filters, deck));
 }
 
 /* ---------------- muddy points ---------------- */
@@ -619,7 +641,8 @@ function settingsView() {
     el('div', { class: 'setting' }, el('div', {}, el('strong', {}, 'Theme'), el('div', { class: 'hint' }, 'System follows your device.')), theme),
     el('div', { class: 'setting' }, el('div', {}, el('strong', {}, 'Focus sprint length'), el('div', { class: 'hint' }, 'The ⏱ button starts a countdown. When it ends, take a break.')), tm),
     el('div', { class: 'setting' }, el('div', {}, el('strong', {}, 'Reset progress'), el('div', { class: 'hint' }, 'Clears XP, streak, mastery and muddy points on this device.')), el('button', { class: 'btn sm', type: 'button', onclick: () => { if (confirm('Reset all progress on this device?')) { S = JSON.parse(JSON.stringify(DEFAULT)); save(); updateHeader(); toast('Progress reset'); homeView(); } } }, 'Reset')),
-    el('p', { class: 'hint', style: 'margin-top:14px' }, 'Progress is saved in this browser only. Content: ' + CASES.length + ' cases, ' + WHO_FIRST.length + ' priority cards, ' + TREND_TEMPLATES.length + ' trend templates, ' + QUICKFIRE.length + ' quick-fire questions, ' + RHYMES.length + ' rhyme cards.'))));
+    el('p', { class: 'hint', style: 'margin-top:14px' }, 'Content across all courses: ' + CASES.length + ' cases, ' + WHO_FIRST.length + ' priority cards, ' + TREND_TEMPLATES.length + ' trend templates, ' + QUICKFIRE.length + ' quick-fire questions, ' + RHYMES.length + ' rhyme cards.')),
+    SR.hooks.settingsPanel ? SR.hooks.settingsPanel() : el('div', { class: 'card', style: 'margin-top:14px' }, el('div', { class: 'eyebrow' }, 'Account'), el('p', { class: 'hint' }, 'Sign-in is not configured on this copy. Progress stays in this browser.'))));
 }
 
 /* ---------------- focus timer ---------------- */
@@ -635,50 +658,70 @@ function toggleTimer() {
 
 /* ---------------- modes registry ---------------- */
 const Modes = [
-  { id: 'shift', name: 'Start a shift', tag: '≈ 12 minutes', d: 'One random case through all six steps, plus quick rounds: who first, a trend, an ABG, and a delegation call.', start() { runShift(); } },
-  { id: 'case', name: 'Pick a case', tag: CASES.length + ' cases', d: 'Choose a scenario from your course and walk it step by step.', start: caseListView },
-  { id: 'whofirst', name: 'Who first?', tag: 'Priority lens', d: 'Four clients at 0700. Choose who you see first, then name the cue that decided it.', start() { whoFirstRound(() => homeView()); } },
-  { id: 'trend', name: 'Trend Detective', tag: 'Evaluate outcomes', d: 'Two columns of a flowsheet with new numbers every time. Better, worse, or same? Then name the threat.', start() { trendRound(() => homeView()); } },
-  { id: 'abg', name: 'ABG Decoder', tag: 'Analyze cues', d: 'Randomly generated blood gases. Name the disorder, the compensation, the cause, and the action.', start() { abgRound(() => homeView()); } },
-  { id: 'bowtie', name: 'Bow-tie builder', tag: 'NGN item', d: 'Condition, two actions, two parameters to monitor. Drag-and-drop practice, tap style.', start() { bowtieRound(() => homeView()); } },
-  { id: 'delegation', name: 'What stays with the RN?', tag: 'Delegation', d: 'Quick calls on what cannot be delegated.', start() { delegationRound(() => homeView()); } },
-  { id: 'quickfire', name: 'Quick Fire', tag: 'Class Kahoot', d: 'Five fast questions from the class Kahoot. Assess before you act.', start() { quickFireRound(() => homeView(), 5); } },
-  { id: 'rhymes', name: 'Rhyme & Reason', tag: RHYMES.length + ' cards', d: 'The mnemonics, rhymes and heuristics behind every case. Flip, or quiz yourself.', start: rhymesView },
-  { id: 'muddy', name: 'Muddy points', tag: 'Review', d: 'Everything you have missed, ready to replay.', start: muddyView }
+  { id: 'shift', method: 'cases', name: 'Start a shift', tag: '≈ 12 minutes', d: 'One random case through all six steps, plus quick rounds: who first, a trend, an ABG, a delegation call, quick fire.', available: c => c.cases.length > 0, emptyMsg: 'A shift needs at least one case. Add a case pack first.', start() { runShift(); } },
+  { id: 'case', method: 'cases', name: 'Pick a case', tag: c => c.cases.length + ' cases', d: 'Choose a scenario from your course and walk it step by step.', available: c => c.cases.length > 0, start: caseListView },
+  { id: 'whofirst', method: 'whofirst', name: 'Who first?', tag: 'Priority lens', d: 'Four clients at 0700. Choose who you see first, then name the cue that decided it.', available: c => c.whofirst.filter(x => x.tier === 1).length > 0 && c.whofirst.length >= 4, start() { whoFirstRound(() => homeView()); } },
+  { id: 'trend', method: 'trend', name: 'Trend Detective', tag: 'Evaluate outcomes', d: 'Two columns of a flowsheet with new numbers every time. Better, worse, or same? Then name the threat.', available: c => c.trends.length >= 4, start() { trendRound(() => homeView()); } },
+  { id: 'abg', method: 'abg', name: 'ABG Decoder', tag: 'Analyze cues', d: 'Randomly generated blood gases. Name the disorder, the compensation, the cause, and the action.', start() { abgRound(() => homeView()); } },
+  { id: 'bowtie', method: 'cases', name: 'Bow-tie builder', tag: 'NGN item', d: 'Condition, two actions, two parameters to monitor. Drag-and-drop practice, tap style.', available: c => c.cases.some(x => x.bowtie), start() { bowtieRound(() => homeView()); } },
+  { id: 'delegation', method: 'whofirst', name: 'What stays with the RN?', tag: 'Delegation', d: 'Quick calls on what cannot be delegated.', available: c => c.delegation.length > 0, start() { delegationRound(() => homeView()); } },
+  { id: 'quickfire', method: 'questions', name: 'Quick Fire', tag: c => c.quickfire.length + ' questions', d: 'Five fast questions. Assess before you act.', available: c => c.quickfire.length > 0, emptyMsg: 'Add practice questions in course settings.', start() { quickFireRound(() => homeView(), 5); } },
+  { id: 'rhymes', method: 'flashcards', name: 'Rhyme & Reason', tag: c => c.rhymes.length + ' cards', d: 'Flashcards, mnemonics, rhymes and heuristics. Flip, or quiz yourself.', available: c => c.rhymes.length > 0, emptyMsg: 'Add flashcards in course settings.', start: rhymesView },
+  { id: 'muddy', name: 'Muddy points', tag: 'Review', d: 'Everything you have missed, ready to replay.', start: muddyView },
+  { id: 'insights', name: 'Insights', tag: 'What works', d: 'Which study methods are paying off, with real numbers.', start() { SR.insights.view(); } }
 ];
 
 /* ---------------- shift runner ---------------- */
 function runShift() {
-  const leastSeen = CASES.slice().sort((a, b) => (S.seen[a.id] || 0) - (S.seen[b.id] || 0)); const c = pick(leastSeen.slice(0, Math.max(3, Math.ceil(CASES.length / 3))));
-  const queue = [
-    { name: 'Who first?', run: d => whoFirstRound(d) },
-    { name: c.title, run: d => runCase(c, { onDone: d, onQuit: endShift }) },
-    { name: 'Trend Detective', run: d => trendRound(d) },
-    { name: 'ABG Decoder', run: d => abgRound(d) },
-    { name: 'Delegation', run: d => delegationRound(d) },
-    { name: 'Quick Fire', run: d => quickFireRound(d, 3) },
-    { name: 'Who first?', run: d => whoFirstRound(d) }
-  ];
-  const results = []; let i = 0; const bar = $('#shiftbar'); bar.hidden = false;
+  setMode('case');
+  const content = SR.content(); if (!content.cases.length) { toast('No cases in this course yet.'); return homeView(); }
+  const leastSeen = content.cases.slice().sort((a, b) => (S.seen[a.id] || 0) - (S.seen[b.id] || 0)); const c = pick(leastSeen.slice(0, Math.max(3, Math.ceil(content.cases.length / 3))));
+  const queue = [];
+  const has = m => !SR.courses.active().methods || SR.courses.active().methods.includes(m);
+  if (has('whofirst') && content.whofirst.length >= 4) queue.push({ name: 'Who first?', mode: 'whofirst', run: d => whoFirstRound(d) });
+  queue.push({ name: c.title, mode: 'case', run: d => runCase(c, { onDone: d, onQuit: endShift }) });
+  if (has('trend') && content.trends.length >= 4) queue.push({ name: 'Trend Detective', mode: 'trend', run: d => trendRound(d) });
+  if (has('abg')) queue.push({ name: 'ABG Decoder', mode: 'abg', run: d => abgRound(d) });
+  if (has('whofirst') && content.delegation.length) queue.push({ name: 'Delegation', mode: 'delegation', run: d => delegationRound(d) });
+  if (has('questions') && content.quickfire.length) queue.push({ name: 'Quick Fire', mode: 'quickfire', run: d => quickFireRound(d, 3) });
+  if (has('whofirst') && content.whofirst.length >= 4) queue.push({ name: 'Who first?', mode: 'whofirst', run: d => whoFirstRound(d) });
+  const results = []; let i = 0; const bar = $('#shiftbar'); bar.hidden = false; const shiftId = Date.now();
   function setBar() { bar.firstElementChild.style.width = (100 * i / queue.length) + '%'; }
   function next(score) { if (score !== undefined) results.push(score); i++; setBar(); if (i >= queue.length) return finish(); queue[i].run(next); }
   function endShift() { bar.hidden = true; homeView(); }
   function finish() {
     S.shifts++; checkBadges(); save(); bar.hidden = true;
     const avg = results.reduce((a, b) => a + b, 0) / results.length; const pct = Math.round(avg * 100);
+    const modesUsed = [...new Set(queue.map(q => q.mode))];
+    const rate = el('div', { class: 'row', style: 'margin-top:8px' });
+    const names = { case: 'The case', whofirst: 'Who first?', trend: 'Trend Detective', abg: 'ABG Decoder', delegation: 'Delegation', quickfire: 'Quick Fire' };
+    let rated = false;
+    modesUsed.forEach(m => rate.append(el('button', { class: 'btn sm', type: 'button', onclick: (e) => { if (rated) return; rated = true; S.ratings.push({ t: Date.now(), c: S.activeCourse, shift: shiftId, m }); save(); for (const b of rate.children) b.classList.toggle('primary', b === e.currentTarget); toast('Noted. This feeds the Insights page.'); } }, names[m] || m)));
     show(el('div', {}, el('div', { class: 'card lift' }, el('div', { class: 'eyebrow' }, 'Shift complete'), el('h1', {}, pct >= 85 ? 'Charge-nurse level.' : pct >= 65 ? 'Good shift. Real progress.' : 'You showed up and finished. That is the habit that passes exams.'), el('div', { class: 'bigxp' }, pct + '% · ' + S.xp + ' XP total'),
       el('div', { class: 'scoreline', style: 'margin-top:12px' }, ...queue.map((q, k) => el('div', { class: 's' }, el('div', { class: 'b', style: 'color:' + (results[k] === 1 ? 'var(--good)' : results[k] >= .5 ? 'var(--warn)' : 'var(--bad)') }, Math.round(results[k] * 100) + '%'), el('div', { class: 'l' }, q.name)))),
-      el('div', { class: 'rhymebox' }, '“' + pick(RHYMES).back.split('\n')[0] + '”'),
+      el('div', { class: 'card', style: 'margin-top:14px;background:var(--surface2)' }, el('strong', {}, 'One tap: which round helped you understand something best today?'), rate),
       el('p', { style: 'margin-top:12px' }, 'Take a real break now. Ten minutes away from the screen makes the next shift stick better.'),
       el('div', { class: 'actions' }, el('button', { class: 'btn primary', type: 'button', onclick: homeView }, 'Home'), el('button', { class: 'btn', type: 'button', onclick: runShift }, 'Another shift')))));
   }
   setBar(); queue[0].run(next);
 }
 
+/* ---------------- public API for the other modules ---------------- */
+window.SR = {
+  el, show, toast, shuffle, sample, pick, rand, fill, makePatient, esc,
+  state: () => S, save, record, setMode, questionCard, backRow, plain, chartPanel, runCase, homeView, settingsView, caseListView,
+  ItemTypes, Modes, BADGES, FRAMEWORKS, masteryPct,
+  hooks: {},            // onSave(state) — set by sync.js
+  courses: null,        // set by courses.js
+  insights: null,       // set by insights.js
+  content: () => (SR.courses ? SR.courses.content() : { cases: CASES, whofirst: WHO_FIRST, trends: TREND_TEMPLATES, quickfire: QUICKFIRE, rhymes: RHYMES, delegation: DELEGATION }),
+  replaceState(next) { S = Object.assign({}, DEFAULT, next); save(); updateHeader(); applyTheme(); homeView(); }
+};
+
 /* ---------------- boot ---------------- */
-$('#brandBtn').addEventListener('click', homeView);
+$('#brandBtn').addEventListener('click', () => SR.courses ? SR.courses.picker() : homeView());
 $('#settingsBtn').addEventListener('click', settingsView);
 $('#timerBtn').addEventListener('click', toggleTimer);
-updateHeader(); homeView();
-window.ShiftReady = { state: () => S, ItemTypes, Modes };
+updateHeader();
+window.addEventListener('DOMContentLoaded', () => { if (SR.courses) SR.courses.boot(); else homeView(); });
 })();

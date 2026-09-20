@@ -5,6 +5,12 @@ Everything the app teaches lives in plain text files in `content/`. You never ne
 The easiest way to add content is to ask Claude: "Add an unfolding case about ___ in the same
 format as `content/resp.js`." This page explains the format so you can check the result.
 
+## 0. Which course does content belong to?
+
+Every item (case, card, template, question, rhyme) belongs to a course. Items with no `course` field belong to
+the built-in course `nurs4620`. For another course, add `course: '<course id>'` to each item; the id is shown
+in the course's settings (it is generated when the course is created in the app, e.g. `c1a2b3c`).
+
 ## 1. An unfolding case
 
 A case is one `window.CASES.push({...})` block. Copy an existing one and change the words.
