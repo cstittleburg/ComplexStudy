@@ -8,8 +8,9 @@ Next Generation NCLEX and the course exams use.
 
 ## Open it
 
-No install, no server. Open `index.html` in any browser (double-click it, or serve the folder with
-GitHub Pages). Progress (XP, streak, mastery per step, muddy points) is saved in that browser.
+No install, no server. Open `index.html` in any browser, or host the folder on GitHub Pages or Netlify
+(see `docs/HOSTING.md`). Progress is saved in the browser; with Supabase keys in `config.js` it also syncs
+to an account so it follows her across devices.
 
 ## What's inside
 
@@ -25,6 +26,11 @@ GitHub Pages). Progress (XP, streak, mastery per step, muddy points) is saved in
 | Quick Fire | Fast questions from the class Kahoot. |
 | Rhyme & Reason | 55 mnemonic and rhyme cards, with a quiz-me mode. |
 | Muddy points | Everything missed, ready to replay. |
+| Insights | Which study methods are paying off: accuracy, improvement over time, retention of missed items, time per item, and one-tap ratings after each shift. |
+
+## Courses
+
+The home screen lists courses. NURS 4620 is built in. "Create a course" walks through a short setup: name the course, list the material, choose how to study (cases, prioritization, trends, ABGs, practice questions, flashcards), and pick the frameworks. Flashcards and practice questions can be written in the app; cases and other packs are built by Claude from the exported course spec plus the files.
 
 Every wrong answer gets a short, kind explanation and the case continues to the next step,
 exactly like the exam. Names, ages and answer order change on every replay.
@@ -33,7 +39,14 @@ exactly like the exam. Names, ages and answer order change on every replay.
 
 ```
 index.html            page + styles
-app.js                the engine (item types, modes, scoring, chart panel)
+app.js                the engine (item types, modes, scoring, chart panel, event log)
+courses.js            course picker, setup wizard, course settings, flashcard/question editors
+insights.js           the Insights page (method effectiveness)
+sync.js               optional accounts + cloud sync (Supabase); off until config.js has keys
+config.js             deployment keys (empty = local-only)
+netlify.toml          Netlify static-site config
+supabase/migrations/  SQL for the progress table
+docs/HOSTING.md       Netlify + Supabase setup steps
 content/frameworks.js thinking models (CJMM, Priority Lens, A-to-I survey, SBAR) — add new frameworks here
 content/resp.js       respiratory cases
 content/neuro.js      neuro cases
