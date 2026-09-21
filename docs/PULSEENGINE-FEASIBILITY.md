@@ -14,10 +14,31 @@ Answers gathered after the first draft. Everything below is written against thes
 | Question | Decision |
 | --- | --- |
 | Who is it for? | **Multi-user.** A free pilot for nursing students at one university, to gather data and feedback, then a paid tier later. |
+| Pilot size and timing | **About 200 students, next semester.** |
+| Is this a product? | **Yes.** The intent is a commercial product. |
 | Why the professor community layer? | It was a **backdoor to tailor content to a specific program.** The goal is program-specific tailoring; the community mechanism was a means, not the point. |
 | Why Next.js? | Because it is multi-user. (Section 3 explains why those two things are not linked.) |
-| Uploaded material | **Stays private per student**, to avoid copyright problems. |
+| Uploaded material | **Never shared. A NotebookLM-style sandbox:** each student's sources are private to them, and everything the app generates for them comes only from their own sources. |
 | Budget | Flexible over time. The $50 figure was a guess at what a free starter group would cost the person running it. |
+| Database | The Shift Ready Supabase project is `zenvotibmwyytvvcxjqx`. It is under a different Supabase account than the one connected to this session, so tables there will be created through the dashboard's SQL editor (as `docs/HOSTING.md` already describes) or after that account is connected. **No tables are being created now; this document is planning only.** |
+
+### What "NotebookLM-style" commits you to
+
+This is a useful framing because it is a product principle, not just a legal dodge:
+
+1. **Sources are private.** A student's uploads are visible to that student and nobody
+   else, including the app's operator in the normal course of things.
+2. **Output is grounded.** Every generated case, card or question comes from that
+   student's sources and can say which source it came from. Nothing is invented from
+   general knowledge. (This is also the hallucination defence in section 7.)
+3. **Nothing crosses notebooks.** No "other students in your course uploaded X." The
+   only thing that crosses students is aggregate, anonymous performance data
+   (section 6b), which is about the students, not the material.
+4. **The student is responsible for what they upload.** NotebookLM's terms put the
+   copyright responsibility on the user, who is uploading for their own study. The
+   app's terms of service should say the same thing. This is standard, but it has to be
+   written down, and a commercial product needs real terms and a real privacy policy,
+   not a paragraph in a README.
 
 ---
 
@@ -215,32 +236,44 @@ Content generation from a supplied answer key is extraction and reformatting, no
 reasoning. Sonnet 5 is a genuinely good fit. Use Opus 5 only if pilot users report
 quality problems.
 
-### Scenario 1: the pilot (what you would personally pay)
+### The pilot: 200 students, one semester (what you would personally pay)
 
-Assume 30 students, one semester, 6 units each, Sonnet 5 with caching, plus the small
-per-miss explanation calls.
+Assumptions: 200 sign-ups, 6 units uploaded each, Sonnet 5 with caching, plus the small
+per-miss explanation calls. A four-month semester.
 
 | Line | Amount |
 | --- | --- |
-| Generation: 30 x 6 x $0.28 | ~$50 for the semester |
-| Explanations: 30 students x ~200 misses x ~$0.003 | ~$18 for the semester |
-| Netlify, Supabase, Functions | $0 (free tiers) |
-| **Total** | **~$70 for the semester, ~$17/month** |
+| Generation: 200 x 6 x $0.28 | ~$340 for the semester |
+| Explanations: 200 students x ~200 misses x ~$0.003 | ~$120 for the semester |
+| Supabase Pro (needed at this size: no pausing, 8GB database, 100GB storage) | $25/month, ~$100 |
+| Netlify (free tier covers 100GB bandwidth; a static site this small stays under it) | $0 |
+| Netlify Functions (free tier, 125k calls/month) | $0 |
+| **Total** | **~$560 for the semester, ~$140/month** |
 
-Well under the $50/month guess. The same pilot at 100 students is roughly $55/month.
+Two honest adjustments to that number:
 
-### Scenario 2: 200 active students (the original spec's number)
+- **Not everyone who signs up uploads six units.** In most pilots, roughly half of
+  sign-ups become regular users. A realistic figure is $300 to $400 for the semester.
+- **Upload caps are the cost control that matters.** A cap of 8 units per student per
+  semester keeps the worst case bounded at about $450 in generation even if every single
+  student maxes out. Set the cap; raise it for people who ask.
 
-~$60 to $70 per month on Sonnet 5 with caching and per-student material (no sharing).
-Just over the spec's $50 target. Met with a per-student upload cap of 5 units, or by
-raising the target. Since uploads are per-student by decision, there is no
-deduplication saving to count on.
+Per active student, that is roughly **$2 to $3 for the whole semester.** That is the
+number the paid tier is built on.
 
-### The paid tier, briefly
+### Smaller pilot, for comparison
 
-At $0.28 per unit and maybe $1 per student per month all-in, a $5/month tier has room.
+Thirty students runs about $70 for the semester on free tiers (Supabase Pro is optional
+at that size, though the pause-on-inactivity problem still applies).
+
+### The paid tier
+
+At $2 to $3 per student per semester in costs, a $5/month or $15/semester tier has a
+comfortable margin, and a free tier with a low upload cap is affordable as a funnel.
 Stripe integration is a few days of work and a Netlify Function; nothing in the pilot
-design blocks it. Do not build it until the pilot says people would pay.
+design blocks it. Do not build it until the pilot says people would pay, but do collect
+"would you pay for this?" in the pilot feedback form, because that is the question the
+pilot exists to answer.
 
 ### Two things that catch people
 
@@ -317,9 +350,30 @@ it can be added any time. It is not on the pilot's critical path.
 
 ---
 
-## 8. Suggested build order
+## 8. Suggested build order and whether "next semester" is realistic
 
 Each phase is shippable on its own. Phases 0 and 1 are the pre-pilot gate.
+
+**On the timeline.** If next semester starts in January, there are about three and a
+half months. With Claude doing the building and one person directing, phases 0 through 3
+are comfortable in that window and phase 4 (generation) is achievable but is the one
+with real uncertainty, because the quality of generated nursing content has to be checked
+by someone who knows nursing before 200 students see it. The safe plan is to **open the
+pilot with phases 0 to 3 and ship generation a few weeks in**, to the students already
+signed up, rather than hold the launch for it. An app where 200 students upload their
+material and use the existing study modes with adaptive routing is already a real pilot
+that produces real data.
+
+Rough effort, in working sessions rather than calendar time:
+
+| Phase | Sessions | Notes |
+| --- | --- | --- |
+| 0. Safe to open | 1 to 2 | Owner-scope the built-in pack, consent, spending cap, terms and privacy policy drafts |
+| 1. Events table | 1 | Small code change plus one migration |
+| 2. Modality routing | 1 to 2 | No new infrastructure |
+| 3. Upload and extract | 3 to 4 | First Netlify Function, file parsing, storage |
+| 4. Generation and review screen | 4 to 6 | The prompt, the queue, the versioned payloads, and the review UI; then nursing-side quality checking |
+| 5. Per-item explanation | 1 | Reuses phase 4 plumbing |
 
 **Phase 0: make it safe to open the door.**
 Owner-scope the built-in NURS 4620 pack (section 4, option A). Add the privacy note and
@@ -354,20 +408,26 @@ Only if the pilot says so.
 
 ## 9. Open questions
 
-Remaining after the first round of answers.
+Remaining after two rounds of answers.
 
-1. **Pilot size and date.** How many students, and which semester? Thirty in spring is a
-   different plan from two hundred in three weeks.
-2. **Who is the pilot student, and is a formal study intended?** The README is written
-   for one specific student. If she is the one recruiting classmates, the privacy note
-   is enough. If anyone plans to write this up as research, the IRB question in section 7
-   comes first.
-3. **The existing NURS 4620 pack.** Option A (owner-scope it), B (ask the professor), or
-   C (rewrite)? A is the default if there is no answer.
-4. **Does the university have a policy on third-party study tools?** Some nursing
-   programs have rules about uploading course material to outside services. Worth one
-   email to the program office before recruiting, because "the school said no" after
-   launch is worse than before.
-5. **Who runs the Supabase project?** `config.js` points at `zenvotibmwyytvvcxjqx`, which
-   is not in the Supabase account this session can see. The migrations in section 4 need
-   to run there.
+1. **When exactly does next semester start, and how are students recruited?** The
+   timeline in section 8 assumes January. Recruiting through the nursing program (a
+   flyer, a class announcement) is a different conversation with the school than
+   recruiting through a group chat, and the school's answer to question 3 depends on it.
+2. **Is a formal study intended, or product feedback only?** If anyone plans to write
+   this up as research, the university's IRB must approve before data collection starts.
+   For product feedback a privacy policy and consent checkbox are enough.
+3. **Does the nursing program have a policy on third-party study tools?** A commercial
+   app that students upload course material into is exactly the kind of thing some
+   programs have rules about. One email to the program office before recruiting beats
+   "the school said no" after launch. This matters more now that it is a product.
+4. **The existing NURS 4620 pack.** Option A (owner-scope it), B (ask the professor), or
+   C (rewrite)? A is the default if there is no answer, and it needs to happen before
+   the first outside login.
+5. **Who does the nursing-side quality check on generated content?** Phase 4 needs a
+   nurse or nursing student to read generated cases against the source packet before
+   they go to 200 people. Is that the pilot student, and does she have the time in the
+   weeks before launch?
+6. **Terms of service and privacy policy.** A commercial product needs real ones. Who
+   writes them? A template plus a one-hour review by a lawyer is the usual pilot-stage
+   answer.
