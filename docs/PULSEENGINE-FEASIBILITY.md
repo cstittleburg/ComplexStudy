@@ -20,6 +20,10 @@ Answers gathered after the first draft. Everything below is written against thes
 | Why Next.js? | Because it is multi-user. (Section 3 explains why those two things are not linked.) |
 | Uploaded material | **Never shared. A NotebookLM-style sandbox:** each student's sources are private to them, and everything the app generates for them comes only from their own sources. |
 | Budget | Flexible over time. The $50 figure was a guess at what a free starter group would cost the person running it. |
+| University policy on outside study tools | **None.** |
+| Formal research / IRB | **No.** Product feedback only. |
+| Nursing-side quality check | **The pilot student**, who will be an RN by launch. Source material is the professor's own notes and packets. |
+| Terms and privacy policy | **Yes, boilerplate now.** See `docs/TERMS.md` and `docs/PRIVACY.md`. Lawyer review before launch. |
 | Database | The Shift Ready Supabase project is `zenvotibmwyytvvcxjqx`. It is under a different Supabase account than the one connected to this session, so tables there will be created through the dashboard's SQL editor (as `docs/HOSTING.md` already describes) or after that account is connected. **No tables are being created now; this document is planning only.** |
 
 ### What "NotebookLM-style" commits you to
@@ -55,6 +59,10 @@ The spec is three separate products wearing one hat:
 The biggest correction to the spec: it assumes a greenfield Next.js + React rewrite.
 Shift Ready today is a **static site**, plain HTML and JavaScript files with no build
 step, served directly by Netlify. Multi-user does not require the rewrite. Section 3.
+
+The two things that would make this different from every other study app, adaptive
+*delivery* and professor-specific tailoring, are both feasible, but not in the form the
+spec describes. Section 10 is the honest version of each.
 
 The biggest thing the spec missed: **the existing built-in NURS 4620 content is derived
 from a professor's packets.** That was fine for one student's private study tool. It is
@@ -408,26 +416,187 @@ Only if the pilot says so.
 
 ## 9. Open questions
 
-Remaining after two rounds of answers.
+Remaining after three rounds of answers.
 
-1. **When exactly does next semester start, and how are students recruited?** The
-   timeline in section 8 assumes January. Recruiting through the nursing program (a
-   flyer, a class announcement) is a different conversation with the school than
-   recruiting through a group chat, and the school's answer to question 3 depends on it.
-2. **Is a formal study intended, or product feedback only?** If anyone plans to write
-   this up as research, the university's IRB must approve before data collection starts.
-   For product feedback a privacy policy and consent checkbox are enough.
-3. **Does the nursing program have a policy on third-party study tools?** A commercial
-   app that students upload course material into is exactly the kind of thing some
-   programs have rules about. One email to the program office before recruiting beats
-   "the school said no" after launch. This matters more now that it is a product.
-4. **The existing NURS 4620 pack.** Option A (owner-scope it), B (ask the professor), or
-   C (rewrite)? A is the default if there is no answer, and it needs to happen before
-   the first outside login.
-5. **Who does the nursing-side quality check on generated content?** Phase 4 needs a
-   nurse or nursing student to read generated cases against the source packet before
-   they go to 200 people. Is that the pilot student, and does she have the time in the
-   weeks before launch?
-6. **Terms of service and privacy policy.** A commercial product needs real ones. Who
-   writes them? A template plus a one-hour review by a lawyer is the usual pilot-stage
-   answer.
+1. **When exactly does next semester start?** The timeline in section 8 assumes January.
+2. **Business entity and jurisdiction.** The terms and privacy policy have placeholders
+   for the legal name of the operator and the governing state. A sole proprietorship
+   works for a pilot; an LLC is the usual step before charging money.
+3. **The existing NURS 4620 pack.** Option A (owner-scope it) is the default and happens
+   in phase 0 unless told otherwise.
+4. **Cohort pooling of testing profiles (section 10, part 2, step 4).** Opt-in with a
+   minimum of five contributors is the recommended design. Confirm, or leave pooling out
+   of the pilot entirely and do it per-student only.
+
+---
+
+## 10. The two differentiators, honestly
+
+Both of these are the reason to build this instead of pointing students at UWorld. Both
+are feasible. Neither is feasible in quite the form the spec describes, and knowing
+where the line is matters more than anything else in this document.
+
+### Part 1: Adaptive delivery, not just adaptive focus
+
+**The question.** Every adaptive learning product (ALEKS, Knewton, UWorld, ATI) adapts
+*what* you study next: find the weak topic, serve more of it. Nobody adapts *how* it is
+delivered. Is that because it is hard, or because it does not work?
+
+**The honest answer: a bit of both, and the "does not work" part has a specific shape
+you can steer around.**
+
+The obvious version of adaptive delivery is "figure out whether this student is a visual
+learner or a verbal learner and serve them that way." That version has been tested
+repeatedly and does not hold up. The research term is the *meshing hypothesis* (match
+instruction to the learner's preferred style), and the major reviews (Pashler and
+colleagues, 2008, is the standard citation; several replications since) found no
+evidence that matching improves outcomes. Students *prefer* a style; they do not learn
+better in it. This is the reason nobody ships it: the companies that tried it built on a
+premise that the evidence does not support, and the smart ones noticed.
+
+**What does work is adapting delivery on *measured outcomes*, not on preference or
+self-reported style.** The distinction is everything:
+
+| Discredited | Supported |
+| --- | --- |
+| "You said you are a visual learner, so here are diagrams" | "The last three times you practised this topic with mnemonics, you retained it a week later; with plain questions you did not. Here are mnemonics." |
+| Fixed learner type, decided once | Per-learner, per-topic, re-estimated continuously |
+| Preference | Retention on a later test |
+
+And there are delivery levers with strong evidence behind them that have nothing to do
+with "style":
+
+- **Spacing.** Reviewing at expanding intervals beats cramming. Every serious flashcard
+  app implements this (the algorithms are called SM-2 and FSRS). Shift Ready does not
+  yet. This is the single highest-value adaptive feature and it is pure delivery.
+- **Retrieval practice.** Testing yourself beats re-reading. The app already does this.
+- **Scaffolding and fading.** Start with a worked example, then a fill-in-the-blank, then
+  a full problem. Move the student up the ladder as they succeed and down when they
+  fail. This is adaptive delivery in the most literal sense, and it is well supported.
+- **Interleaving.** Mixing topics in a session beats blocking them, once basics are in.
+- **Session shape for ADHD.** Shorter sessions, immediate feedback, a visible finish line,
+  novelty between items. These are delivery adaptations with evidence behind them, and
+  the app already has the focus timer and the twelve-minute shift. Making session length
+  and item variety adapt to measured attention drop-off (accuracy falling within a
+  session, time-per-item rising) is a real feature nobody has.
+
+**Why nobody does the outcome-based version either.** Cost. To learn empirically which
+format works for *this* student on *this* topic, every topic has to exist in every
+format. Authoring a nursing unit as cases *and* cards *and* cloze *and* timelines *and*
+mnemonics by hand is five times the work, and content companies sell one library to
+everyone. **This is the thing the LLM changes.** Generating all five formats from one
+uploaded packet costs about thirty cents. Multi-format authoring goes from the expensive
+part to the free part, and the empirical experiment becomes affordable per student.
+That is the actual differentiator, and it is a structural one, not a feature.
+
+**How it would work, concretely.**
+
+1. **Ladder of formats per concept.** For each concept in a unit, the payload holds the
+   same idea at several rungs: mnemonic or hook, flashcard, cloze sentence, single
+   answer, select-all, full unfolding case step. Already mostly true of the content
+   format in `docs/ADDING-CASES.md`.
+2. **A common yardstick.** The thing being optimised must be performance on the *target*
+   format (the NGN-style case item, since that is the exam) after a delay, not
+   performance on the practice format itself. Otherwise the system learns that
+   flashcards are "best" because flashcards are easiest. This is the mistake most
+   attempts make, and it is a design decision, not a technical one.
+3. **A per-learner, per-topic allocation policy.** In plain terms: for each student and
+   topic, keep a running estimate of "when I practise this way, how do I do on the case
+   item a few days later?" Serve mostly the format with the best estimate, but keep
+   trying the others some of the time so the estimate stays honest. (The technical name
+   is a *bandit* algorithm; Thompson sampling is the standard choice and is a few dozen
+   lines of code.) New students start from the cohort average until they have their own
+   data, which is a legitimate use of the aggregate events table.
+4. **Spacing on top.** Independently of format, schedule each concept's next appearance
+   by an FSRS-style interval. Format decides *how*, spacing decides *when*.
+5. **Scaffold level as a third axis.** If the case step is failing, drop down the ladder
+   for that concept; climb back as rungs are passed.
+
+**Feasibility.** Engineering: straightforward. The events table (section 4) is the
+prerequisite and the rest is arithmetic on it. The bandit and the spacing scheduler are
+each a single file. **Efficacy: unknown, and the pilot is the experiment.** With 200
+students over a semester there is enough data to see whether per-learner format
+allocation beats serving everyone the same mix. It is entirely possible the finding is
+"format matters less than spacing," which would still leave a product with a spacing
+engine and a scaffold ladder that UWorld does not have. Design the pilot so it can
+answer the question: some sessions allocated by the policy, some by a fixed mix, compare
+retention. That is the difference between a claim and a result.
+
+**What to be careful saying.** Do not market this as "learns your learning style."
+That phrase points at the discredited version and any nursing educator who reads the
+research will dismiss the product on sight. "Measures which practice formats actually
+stick for you, and schedules review when you are about to forget" is accurate, is
+defensible, and is what nobody else does.
+
+### Part 2: Tailoring to a professor's testing habits
+
+**The question.** Existing products teach the topic. They do not teach the way *this*
+professor at *this* university tests it. Can that be done without crossing copyright or
+integrity lines?
+
+**Yes, and the line is clearer than it feels.** Copyright protects the professor's
+*expression*: the words of her questions, her slides, her case narratives. It does not
+protect *facts about* those materials: that 70% of her items are select-all, that she
+weights labs over medications, that her distractors are usually the "right action, wrong
+timing" kind, that she always asks one delegation item per case. Analysing a document
+you legitimately have and drawing conclusions about its patterns is not reproduction.
+That is what a student does with a highlighter and a returned exam.
+
+So the design principle is: **learn the professor's style from materials the student
+already legitimately has, keep the materials private, and let only *structure* travel.**
+
+Where it comes from, all already in the student's private notebook:
+
+- The syllabus and exam blueprint (topic weights, framework, item counts).
+- Handed-out case packets with answer keys (the app already uses these).
+- Kahoots, practice quizzes, review sessions (the Week 1 Kahoot is already in the repo).
+- Returned graded exams, where the program returns them. Some do not; then the student's
+  own notes about the exam ("lots of prioritisation, two ABG questions") do the job.
+- Lecture slides, which show what the professor emphasises versus skims.
+
+**What gets extracted: a testing profile that is structure only.** For a course, after
+the student uploads assessments, Claude produces something like:
+
+```
+item types:        SATA 45%, single 30%, matrix 10%, cloze 10%, order 5%
+cognitive level:   application 60%, analysis 30%, recall 10%
+framework:         CJMM, all six steps, "recognise cues" always from a nurse's note
+emphasis:          labs and trends > medications > patient teaching
+distractor style:  plausible actions with wrong priority; rarely absurd options
+rationale style:   one sentence, names the cue
+recurring traps:   "which client first" with two unstable clients
+```
+
+Not one word of the professor's is in that. It is a description of a style, and it
+steers generation: the generated cases for that student come out in that shape. This
+is the "instructor profile" the spec wanted, built from consented private sources
+instead of anonymous gossip, and it is more accurate because it comes from the
+professor's actual assessments rather than students' memories of them.
+
+**The thin lines, and where to stand on each.**
+
+| Line | Where to stand |
+| --- | --- |
+| Reproducing the professor's questions | Inside the student's private notebook, for their own study: this is what the student already does with the paper copy. Never into any shared pool. Never into another student's notebook. |
+| Naming the professor | Key the profile to the **course code and term**, not to a person. "NURS 4620 Fall 2026 testing profile," not "Professor X's habits." Same information, no dossier on an individual. |
+| Pooling profiles across students | Structure-only profiles for the same course code could be pooled to improve accuracy. If done: opt-in ("help improve NURS 4620 tailoring for everyone"), minimum five contributors before a pooled profile is used (so no one contribution is identifiable), and nothing but the numbers and labels travels. This is defensible. It is also optional; per-student profiles work alone. |
+| Current exams | The terms of service must say: only materials you were given for your own use. A student uploading a photo of this week's exam is a student breaking their integrity code, and the app should not be the tool for it. A sensible guard: refuse to build a profile from a document dated within the current exam window, or simply say so in the terms and rely on it. |
+| The professor finding out | With course-code keying and structure-only profiles, what she would find is "the app noticed I ask a lot of select-all questions about lab values." That is not a thing anyone sues over. Compare the spec's version, where she finds an LLM-written character study of her "traps" built from anonymous posts. |
+
+**University-level tailoring** is the easy case: which clinical judgment framework the
+program uses, which textbook edition, NCLEX blueprint alignment, program-specific
+terminology. All of it is public program information and belongs in a per-program
+profile that every student in the program benefits from, no privacy question at all.
+
+**Why nobody does this.** Same reason as part 1. UWorld's business is its content
+library; a professor-specific product would mean a content library per professor, which
+is impossible by hand. When the student brings the content and the app brings the
+engine, per-professor tailoring costs the same as generic. The sandbox is not a
+limitation you are working around. It is the moat.
+
+**Feasibility.** The extraction step is a single Claude call with a structured output
+(a fixed JSON shape the model must fill in), which is a well-supported pattern. The
+steering step is including that profile in the generation prompt. Both are small
+additions to phase 4. The pilot student's course is the natural first test: build the
+profile from the packets already in the repo and see whether she agrees it describes
+how her professor tests. If she does not recognise it, that is a cheap early signal.
