@@ -22,7 +22,8 @@ const BUILTIN = {
     { name: 'Burns, Fluids & Electrolytes', type: 'Slides', week: 'Week 1' },
     { name: 'Complex Care Prioritization: Practical Examples', type: 'Slides', week: '' },
     { name: 'From Assessment to Action: Prioritization Matters', type: 'Slides', week: '' },
-    { name: 'Acid-Base Reference Sheet', type: 'Reference', week: 'Week 3' }
+    { name: 'Acid-Base Reference Sheet', type: 'Reference', week: 'Week 3' },
+    { name: 'NURS 4620/4720 Exam 1 Study Guide', type: 'Study guide', week: 'Exam 1' }
   ],
   custom: { flashcards: [], questions: [] }
 };
@@ -37,7 +38,15 @@ const METHODS = [
   { id: 'flashcards', name: 'Flashcards & mnemonics', d: 'Front/back cards, rhymes, hooks. You can write these in the app.', source: 'editor' }
 ];
 
-function all() { const c = S().courses; if (!c[BUILTIN_ID]) { c[BUILTIN_ID] = JSON.parse(JSON.stringify(BUILTIN)); } return c; }
+function all() {
+  const c = S().courses;
+  if (!c[BUILTIN_ID]) { c[BUILTIN_ID] = JSON.parse(JSON.stringify(BUILTIN)); }
+  else { // merge any materials added to the built-in pack since this browser first stored the course
+    const have = new Set((c[BUILTIN_ID].materials || []).map(m => m.name));
+    BUILTIN.materials.forEach(m => { if (!have.has(m.name)) (c[BUILTIN_ID].materials = c[BUILTIN_ID].materials || []).push(JSON.parse(JSON.stringify(m))); });
+  }
+  return c;
+}
 function active() { const c = all(); return c[S().activeCourse] || null; }
 function setActive(id) { S().activeCourse = id; SR.save(); }
 function courseOf(item) { return item.course || BUILTIN_ID; }
@@ -46,14 +55,17 @@ function courseOf(item) { return item.course || BUILTIN_ID; }
 function content() {
   const c = active(); const id = c ? c.id : BUILTIN_ID;
   const custom = (c && c.custom) || { flashcards: [], questions: [] };
-  const rhymes = window.RHYMES.filter(r => courseOf(r) === id).concat(custom.flashcards.map(f => ({ cat: f.cat || 'My cards', front: f.front, back: f.back, tip: f.tip || '', custom: true, id: f.id })));
-  const quickfire = window.QUICKFIRE.filter(q => courseOf(q) === id).concat(custom.questions.map(q => ({ q: q.q, multi: q.multi, options: q.options, rationale: q.rationale, custom: true, id: q.id })));
+  const focus = (c && c.focus && c.focus.length) ? new Set(c.focus) : null;
+  const inFocus = x => !focus || !x.source || x.source === 'general' || focus.has(x.source);
+  const mine = x => courseOf(x) === id && inFocus(x);
+  const rhymes = window.RHYMES.filter(mine).concat(custom.flashcards.filter(inFocus).map(f => ({ cat: f.cat || 'My cards', front: f.front, back: f.back, tip: f.tip || '', custom: true, id: f.id, source: f.source })));
+  const quickfire = window.QUICKFIRE.filter(mine).concat(custom.questions.filter(inFocus).map(q => ({ q: q.q, multi: q.multi, options: q.options, rationale: q.rationale, custom: true, id: q.id, source: q.source })));
   return {
-    cases: window.CASES.filter(x => courseOf(x) === id),
-    whofirst: window.WHO_FIRST.filter(x => courseOf(x) === id),
-    trends: window.TREND_TEMPLATES.filter(x => courseOf(x) === id),
-    delegation: window.DELEGATION.filter(x => courseOf(x) === id),
-    quickfire, rhymes
+    cases: window.CASES.filter(mine),
+    whofirst: window.WHO_FIRST.filter(mine),
+    trends: window.TREND_TEMPLATES.filter(mine),
+    delegation: window.DELEGATION.filter(mine),
+    quickfire, rhymes, focus: focus ? [...focus] : null
   };
 }
 
@@ -134,6 +146,9 @@ function settings() {
   const card = el('div', { class: 'card' },
     el('div', { class: 'row spread' }, el('div', {}, el('div', { class: 'eyebrow' }, c.term || ''), el('h2', {}, c.name)), el('div', { class: 'row' }, el('button', { class: 'btn sm', type: 'button', onclick: () => wizard(c) }, 'Edit course'), !c.builtin ? el('button', { class: 'btn sm ghost', type: 'button', onclick: () => { if (confirm('Delete this course and its custom cards and questions? Progress events are kept.')) { delete all()[c.id]; S().activeCourse = BUILTIN_ID; SR.save(); picker(); } } }, 'Delete') : null)),
     el('div', { class: 'scoreline', style: 'margin-top:14px' }, el('div', { class: 's' }, el('div', { class: 'b' }, cnt.cases.length), el('div', { class: 'l' }, 'cases')), el('div', { class: 's' }, el('div', { class: 'b' }, cnt.whofirst.length), el('div', { class: 'l' }, 'priority cards')), el('div', { class: 's' }, el('div', { class: 'b' }, cnt.trends.length), el('div', { class: 'l' }, 'trend templates')), el('div', { class: 's' }, el('div', { class: 'b' }, cnt.quickfire.length), el('div', { class: 'l' }, 'questions')), el('div', { class: 's' }, el('div', { class: 'b' }, cnt.rhymes.length), el('div', { class: 'l' }, 'flashcards'))),
+    el('h3', { style: 'margin-top:18px' }, 'Focus'),
+    el('p', { class: 'hint' }, 'Limit practice to items built from particular material. Untick everything to use all of it. Framework and heuristic cards always stay in.'),
+    focusPanel(c),
     el('h3', { style: 'margin-top:18px' }, 'Add content yourself'),
     el('div', { class: 'row', style: 'margin-top:8px' }, el('button', { class: 'btn', type: 'button', onclick: () => editor('flashcards') }, '＋ Flashcard or mnemonic'), el('button', { class: 'btn', type: 'button', onclick: () => editor('questions') }, '＋ Practice question')),
     el('h3', { style: 'margin-top:18px' }, 'Have Claude build a content pack'),
@@ -143,6 +158,19 @@ function settings() {
     el('ul', { class: 'list' }, ...(c.materials || []).map(m => el('li', {}, el('strong', {}, m.name), ' ', el('span', { class: 'hint', style: 'display:inline' }, [m.type, m.week].filter(Boolean).join(' · '))))),
     (c.custom.flashcards.length || c.custom.questions.length) ? el('div', {}, el('h3', { style: 'margin-top:18px' }, 'Your cards and questions'), customList(c)) : null);
   show(el('div', {}, SR.backRow('Course settings'), card));
+}
+function focusPanel(c) {
+  const mats = (c.materials || []).map(m => m.name);
+  const counts = {}; const id = c.id;
+  const bump = x => { if (courseOf(x) === id && x.source && x.source !== 'general') counts[x.source] = (counts[x.source] || 0) + 1; };
+  window.CASES.forEach(bump); window.WHO_FIRST.forEach(bump); window.TREND_TEMPLATES.forEach(bump); window.DELEGATION.forEach(bump); window.QUICKFIRE.forEach(bump); window.RHYMES.forEach(bump);
+  (c.custom.flashcards || []).forEach(bump); (c.custom.questions || []).forEach(bump);
+  const names = [...new Set([...mats, ...Object.keys(counts)])];
+  const wrap = el('div', { class: 'choices' });
+  const sel = new Set(c.focus || []);
+  names.forEach(n => { const on = sel.has(n); wrap.append(el('button', { class: 'choice' + (on ? ' on' : ''), type: 'button', 'aria-pressed': on, onclick: () => { if (sel.has(n)) sel.delete(n); else sel.add(n); c.focus = [...sel]; SR.save(); settings(); } }, el('span', { class: 'box' }), el('span', {}, el('strong', {}, n), el('span', { class: 'hint', style: 'display:block' }, (counts[n] || 0) + ' item' + (counts[n] === 1 ? '' : 's') + ' built from this')))); });
+  if (!names.length) wrap.append(el('p', { class: 'hint' }, 'No material listed yet.'));
+  return el('div', {}, wrap, sel.size ? el('div', { class: 'row', style: 'margin-top:8px' }, el('span', { class: 'hint' }, 'Focused on ' + sel.size + ' material' + (sel.size === 1 ? '' : 's') + '.'), el('button', { class: 'btn sm ghost', type: 'button', onclick: () => { c.focus = []; SR.save(); settings(); } }, 'Clear focus')) : null);
 }
 function customList(c) {
   const ul = el('ul', { class: 'list' });
@@ -159,7 +187,7 @@ function exportSpec(c) {
 }
 function importCustom(c) {
   const ta = el('textarea', { rows: 10, style: 'width:100%', placeholder: '{ "flashcards": [{ "front": "...", "back": "...", "cat": "..." }], "questions": [{ "q": "...", "multi": false, "options": [{ "t": "...", "ok": true, "why": "..." }], "rationale": "..." }] }' });
-  show(el('div', {}, SR.backRow('Import cards and questions'), el('div', { class: 'card' }, el('p', { class: 'hint' }, 'Paste JSON that Claude (or you) produced. Flashcards need front and back; questions need q and options with one or more ok: true.'), ta, el('div', { class: 'actions' }, el('button', { class: 'btn primary', type: 'button', onclick: () => { try { const j = JSON.parse(ta.value); let n = 0; (j.flashcards || []).forEach(f => { if (f.front && f.back) { c.custom.flashcards.push({ id: 'f' + Date.now().toString(36) + n, front: f.front, back: f.back, cat: f.cat || 'My cards', tip: f.tip || '' }); n++; } }); (j.questions || []).forEach(q => { if (q.q && Array.isArray(q.options) && q.options.some(o => o.ok)) { c.custom.questions.push({ id: 'q' + Date.now().toString(36) + n, q: q.q, multi: !!q.multi, options: q.options, rationale: q.rationale || '' }); n++; } }); SR.save(); toast('Imported ' + n + ' item(s)'); settings(); } catch (e) { toast('That is not valid JSON.'); } } }, 'Import')))));
+  show(el('div', {}, SR.backRow('Import cards and questions'), el('div', { class: 'card' }, el('p', { class: 'hint' }, 'Paste JSON that Claude (or you) produced. Flashcards need front and back; questions need q and options with one or more ok: true.'), ta, el('div', { class: 'actions' }, el('button', { class: 'btn primary', type: 'button', onclick: () => { try { const j = JSON.parse(ta.value); let n = 0; (j.flashcards || []).forEach(f => { if (f.front && f.back) { c.custom.flashcards.push({ id: 'f' + Date.now().toString(36) + n, front: f.front, back: f.back, cat: f.cat || 'My cards', tip: f.tip || '', source: f.source }); n++; } }); (j.questions || []).forEach(q => { if (q.q && Array.isArray(q.options) && q.options.some(o => o.ok)) { c.custom.questions.push({ id: 'q' + Date.now().toString(36) + n, q: q.q, multi: !!q.multi, options: q.options, rationale: q.rationale || '', source: q.source }); n++; } }); SR.save(); toast('Imported ' + n + ' item(s)'); settings(); } catch (e) { toast('That is not valid JSON.'); } } }, 'Import')))));
 }
 
 /* ---------------- editors ---------------- */
@@ -170,7 +198,8 @@ function editor(kind) {
     const back = el('textarea', { rows: 4, placeholder: 'Back (the answer, rhyme or mnemonic)', style: 'width:100%' });
     const cat = el('input', { type: 'text', placeholder: 'Category (e.g. Neuro, Mnemonic)', style: 'width:100%' });
     const tip = el('input', { type: 'text', placeholder: 'Optional tip shown under the back', style: 'width:100%' });
-    show(el('div', {}, SR.backRow('New flashcard'), el('div', { class: 'card form' }, front, back, cat, tip, el('div', { class: 'actions' }, el('button', { class: 'btn primary', type: 'button', onclick: () => { if (!front.value.trim() || !back.value.trim()) return toast('Front and back are both needed.'); c.custom.flashcards.push({ id: 'f' + Date.now().toString(36), front: front.value.trim(), back: back.value.trim(), cat: cat.value.trim() || 'My cards', tip: tip.value.trim() }); SR.save(); toast('Card added'); front.value = back.value = tip.value = ''; front.focus(); } }, 'Save and add another'), el('button', { class: 'btn', type: 'button', onclick: () => SR.Modes.find(m => m.id === 'rhymes').start() }, 'Done')))));
+    const src = sourceSelect(c);
+    show(el('div', {}, SR.backRow('New flashcard'), el('div', { class: 'card form' }, front, back, cat, tip, el('label', { class: 'field' }, el('span', { class: 'lbl' }, 'Built from which material?'), src), el('div', { class: 'actions' }, el('button', { class: 'btn primary', type: 'button', onclick: () => { if (!front.value.trim() || !back.value.trim()) return toast('Front and back are both needed.'); c.custom.flashcards.push({ id: 'f' + Date.now().toString(36), front: front.value.trim(), back: back.value.trim(), cat: cat.value.trim() || 'My cards', tip: tip.value.trim(), source: src.value || undefined }); SR.save(); toast('Card added'); front.value = back.value = tip.value = ''; front.focus(); } }, 'Save and add another'), el('button', { class: 'btn', type: 'button', onclick: () => SR.Modes.find(m => m.id === 'rhymes').start() }, 'Done')))));
   } else {
     const q = el('textarea', { rows: 3, placeholder: 'The question', style: 'width:100%' });
     const multi = el('select', {}, el('option', { value: '0' }, 'One correct answer'), el('option', { value: '1' }, 'Select all that apply'));
@@ -178,10 +207,13 @@ function editor(kind) {
     const addRow = () => { const t = el('input', { type: 'text', placeholder: 'Answer option', style: 'flex:2;min-width:180px' }); const ok = el('input', { type: 'checkbox', title: 'Correct?' }); const why = el('input', { type: 'text', placeholder: 'One-line why (shown if she misses it)', style: 'flex:2;min-width:180px' }); rows.push({ t, ok, why }); opts.append(el('div', { class: 'row' }, el('label', { class: 'row', style: 'gap:6px' }, ok, 'correct'), t, why)); };
     for (let i = 0; i < 4; i++) addRow();
     const rat = el('textarea', { rows: 2, placeholder: 'Rationale (one to three kind sentences)', style: 'width:100%' });
-    show(el('div', {}, SR.backRow('New practice question'), el('div', { class: 'card form' }, q, multi, el('h3', {}, 'Options'), opts, el('button', { class: 'btn sm ghost', type: 'button', onclick: addRow }, '＋ option'), rat,
-      el('div', { class: 'actions' }, el('button', { class: 'btn primary', type: 'button', onclick: () => { const options = rows.filter(r => r.t.value.trim()).map(r => ({ t: r.t.value.trim(), ok: r.ok.checked, why: r.why.value.trim() })); if (!q.value.trim() || options.length < 2 || !options.some(o => o.ok)) return toast('Need a question, at least two options, and one marked correct.'); c.custom.questions.push({ id: 'q' + Date.now().toString(36), q: q.value.trim(), multi: multi.value === '1', options, rationale: rat.value.trim() }); SR.save(); toast('Question added'); editor('questions'); } }, 'Save and add another'), el('button', { class: 'btn', type: 'button', onclick: settings }, 'Done')))));
+    const src = sourceSelect(c);
+    show(el('div', {}, SR.backRow('New practice question'), el('div', { class: 'card form' }, q, multi, el('h3', {}, 'Options'), opts, el('button', { class: 'btn sm ghost', type: 'button', onclick: addRow }, '＋ option'), rat, el('label', { class: 'field' }, el('span', { class: 'lbl' }, 'Built from which material?'), src),
+      el('div', { class: 'actions' }, el('button', { class: 'btn primary', type: 'button', onclick: () => { const options = rows.filter(r => r.t.value.trim()).map(r => ({ t: r.t.value.trim(), ok: r.ok.checked, why: r.why.value.trim() })); if (!q.value.trim() || options.length < 2 || !options.some(o => o.ok)) return toast('Need a question, at least two options, and one marked correct.'); c.custom.questions.push({ id: 'q' + Date.now().toString(36), q: q.value.trim(), multi: multi.value === '1', options, rationale: rat.value.trim(), source: src.value || undefined }); SR.save(); toast('Question added'); editor('questions'); } }, 'Save and add another'), el('button', { class: 'btn', type: 'button', onclick: settings }, 'Done')))));
   }
 }
+
+function sourceSelect(c) { return el('select', {}, el('option', { value: '' }, 'Not tied to a material'), ...(c.materials || []).map(m => el('option', { value: m.name }, m.name))); }
 
 function boot() {
   const st = S(); all();
