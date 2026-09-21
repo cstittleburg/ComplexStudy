@@ -421,7 +421,8 @@ function homeView() {
   const rhyme = content.rhymes.length ? pick(content.rhymes).back.split('\n')[0] : (fw.mnemonic || '');
   show(el('div', {},
     el('div', { class: 'hero' },
-      el('div', { class: 'card lift' }, el('div', { class: 'row spread' }, el('div', { class: 'eyebrow' }, course.name), el('button', { class: 'btn sm ghost', type: 'button', onclick: () => SR.courses.picker() }, 'Switch course')), el('h1', {}, greet), el('p', { class: 'lead' }, course.blurb || 'Short practice sessions built from your course material. One shift takes about twelve minutes. Then take a break; you earned it.'),
+      el('div', { class: 'card lift' }, el('div', { class: 'row spread' }, el('div', { class: 'eyebrow' }, course.name), el('button', { class: 'btn sm ghost', type: 'button', onclick: () => SR.courses.picker() }, 'Switch course')),
+        content.focus ? el('div', { class: 'row', style: 'margin-top:6px' }, el('span', { class: 'stat' }, '🎯 Focus: ' + content.focus.join(', ')), el('button', { class: 'btn sm ghost', type: 'button', onclick: () => SR.courses.settings() }, 'change')) : null, el('h1', {}, greet), el('p', { class: 'lead' }, course.blurb || 'Short practice sessions built from your course material. One shift takes about twelve minutes. Then take a break; you earned it.'),
         el('div', { class: 'row', style: 'margin-top:16px' }, canShift ? el('button', { class: 'btn primary', type: 'button', onclick: () => Modes[0].start() }, '▶ Start a shift') : el('button', { class: 'btn primary', type: 'button', onclick: () => SR.courses.settings() }, '＋ Add content'), content.cases.length ? el('button', { class: 'btn', type: 'button', onclick: () => caseListView() }, 'Pick a case') : null, muddyN ? el('button', { class: 'btn', type: 'button', onclick: () => muddyView() }, `Muddy points (${muddyN})`) : null, el('button', { class: 'btn', type: 'button', onclick: () => SR.insights.view() }, 'Insights')),
         rhyme ? el('div', { class: 'rhymebox' }, '“' + rhyme + '”') : null),
       el('div', { class: 'card' }, el('div', { class: 'eyebrow' }, 'Your map of the model · ' + fw.short), el('p', { class: 'hint', style: 'margin:4px 0 10px' }, 'Tap a step for its rhyme. Bars fill as you get items right.'), mastery,
@@ -589,7 +590,7 @@ function quickFireRound(onDone, n = 3) {
   function nextQ() {
     if (i >= qs.length) return onDone(scores.reduce((a, b) => a + b, 0) / scores.length);
     const q = qs[i]; const item = { type: q.multi ? 'sata' : 'single', step: 'action', prompt: q.q, options: q.options, rationale: q.rationale, n: q.multi ? q.options.filter(o => o.ok).length : undefined };
-    show(plain('Quick Fire', 'Question ' + (i + 1) + ' of ' + qs.length + ' · from the class Kahoot', questionCard({ item, stepIndex: 4, key: 'qf:' + q.q.slice(0, 40), label: 'Quick fire: ' + q.q.slice(0, 60), nextLabel: i === qs.length - 1 ? 'Done' : 'Next', onDone: s => { scores.push(s); i++; nextQ(); } })));
+    show(plain('Quick Fire', 'Question ' + (i + 1) + ' of ' + qs.length + ' · ' + (q.source || 'your course material'), questionCard({ item, stepIndex: 4, key: 'qf:' + q.q.slice(0, 40), label: 'Quick fire: ' + q.q.slice(0, 60), nextLabel: i === qs.length - 1 ? 'Done' : 'Next', onDone: s => { scores.push(s); i++; nextQ(); } })));
   }
   nextQ();
 }
@@ -665,7 +666,7 @@ const Modes = [
   { id: 'abg', method: 'abg', name: 'ABG Decoder', tag: 'Analyze cues', d: 'Randomly generated blood gases. Name the disorder, the compensation, the cause, and the action.', start() { abgRound(() => homeView()); } },
   { id: 'bowtie', method: 'cases', name: 'Bow-tie builder', tag: 'NGN item', d: 'Condition, two actions, two parameters to monitor. Drag-and-drop practice, tap style.', available: c => c.cases.some(x => x.bowtie), start() { bowtieRound(() => homeView()); } },
   { id: 'delegation', method: 'whofirst', name: 'What stays with the RN?', tag: 'Delegation', d: 'Quick calls on what cannot be delegated.', available: c => c.delegation.length > 0, start() { delegationRound(() => homeView()); } },
-  { id: 'quickfire', method: 'questions', name: 'Quick Fire', tag: c => c.quickfire.length + ' questions', d: 'Five fast questions. Assess before you act.', available: c => c.quickfire.length > 0, emptyMsg: 'Add practice questions in course settings.', start() { quickFireRound(() => homeView(), 5); } },
+  { id: 'quickfire', method: 'questions', name: 'Quick Fire', tag: c => c.quickfire.length + ' questions', d: 'Five fast questions. Assess before you act.', available: c => c.quickfire.length > 0, emptyMsg: 'Add practice questions in course settings.', start() { quickFireRound(() => homeView(), SR.content().quickfire.length >= 40 ? 8 : 5); } },
   { id: 'rhymes', method: 'flashcards', name: 'Rhyme & Reason', tag: c => c.rhymes.length + ' cards', d: 'Flashcards, mnemonics, rhymes and heuristics. Flip, or quiz yourself.', available: c => c.rhymes.length > 0, emptyMsg: 'Add flashcards in course settings.', start: rhymesView },
   { id: 'muddy', name: 'Muddy points', tag: 'Review', d: 'Everything you have missed, ready to replay.', start: muddyView },
   { id: 'insights', name: 'Insights', tag: 'What works', d: 'Which study methods are paying off, with real numbers.', start() { SR.insights.view(); } }

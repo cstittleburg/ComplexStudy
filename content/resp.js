@@ -373,3 +373,6 @@ window.CASES.push({
       rationale: 'Evaluate each parameter against the previous value, not against normal. The one that declined (SpO₂) is the one you act on next.' }
   ]
 });
+
+/* Source tagging: which course material these items came from (used by the Focus setting). */
+window.CASES.filter(c => c.id.startsWith('resp-')).forEach(c => { c.source = c.source || 'Case Study – Respiratory Disorders (with answers)'; });

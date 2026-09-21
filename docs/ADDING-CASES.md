@@ -11,6 +11,10 @@ Every item (case, card, template, question, rhyme) belongs to a course. Items wi
 the built-in course `nurs4620`. For another course, add `course: '<course id>'` to each item; the id is shown
 in the course's settings (it is generated when the course is created in the app, e.g. `c1a2b3c`).
 
+Each item can also carry `source: '<material name>'`, the exact name of a material in the course's list. The
+Focus setting in course settings uses it to limit practice to chosen materials. Use `source: 'general'` for
+framework or heuristic items that should stay in every focus.
+
 ## 1. An unfolding case
 
 A case is one `window.CASES.push({...})` block. Copy an existing one and change the words.

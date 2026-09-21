@@ -327,3 +327,16 @@ window.RHYMES.push(
   { cat: 'Fluids', front: 'Variceal bleeding', back: '"Active bleed → octreotide. Prevent the bleed → propranolol. Ammonia → lactulose. Ascites → spironolactone."', tip: 'Match the drug to the liver problem.' },
   { cat: 'Fluids', front: 'Low cardiac output', back: 'Shows up where perfusion matters most: confusion and a dry catheter bag.\n\n"Brain and kidneys tell on the heart."', tip: 'Crackles and JVD are congestion, a different story.' }
 );
+
+/* ---------- Source tagging (which material each item came from; drives the Focus setting) ----------
+   'general' = framework/heuristic material that applies to every focus. */
+(function () {
+  const PRI = 'Complex Care Prioritization: Practical Examples', NEURO = 'Complex Cases: Neurological Conditions', BURNS = 'Burns, Fluids & Electrolytes', KAHOOT = 'Week 1 Kahoot', W1 = 'NGN Case Studies Week 1', RESP = 'Case Study – Respiratory Disorders (with answers)', ACID = 'Acid-Base Reference Sheet', ATOI = 'From Assessment to Action: Prioritization Matters';
+  const wf = window.WHO_FIRST;
+  wf.forEach((x, i) => { if (x.source) return; if (i >= 50) { x.source = [KAHOOT, KAHOOT, KAHOOT, KAHOOT, W1, KAHOOT, W1, KAHOOT, W1][i - 50] || PRI; return; } x.source = x.sys === 'Neuro' ? NEURO : x.sys === 'Fluids' ? BURNS : PRI; });
+  window.DELEGATION.forEach(d => d.source = d.source || PRI);
+  const T = { hemorrhage: PRI, burnshock: BURNS, sepsis: 'general', icp: NEURO, statusasth: RESP, neuroshock: NEURO, benzo: NEURO, asthma_better: RESP, sepsis_better: 'general', overload_better: 'general', dka_mixed: 'general' };
+  window.TREND_TEMPLATES.forEach(t => t.source = t.source || T[t.id] || 'general');
+  window.QUICKFIRE.forEach(q => q.source = q.source || KAHOOT);
+  window.RHYMES.forEach((r, i) => { if (r.source) return; if (r.cat === 'The Model') r.source = 'general'; else if (r.cat === 'Priority') r.source = i >= 44 ? ATOI : PRI; else if (r.cat === 'Respiratory') r.source = /ABG|Compensation/.test(r.front) ? ACID : RESP; else if (r.cat === 'Neuro') r.source = NEURO; else if (r.cat === 'Fluids') r.source = i >= 44 ? W1 : BURNS; else r.source = PRI; });
+})();

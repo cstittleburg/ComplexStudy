@@ -265,3 +265,5 @@ window.CASES.push({
       rationale: 'Perfusion has its own scorecard: MAP, lactate, urine output. Fever and WBC track infection; SpO₂ tracks oxygenation. Match the evidence to the question.' }
   ]
 });
+
+window.CASES.filter(c => c.id.startsWith('w1-')).forEach(c => { c.source = c.source || 'NGN Case Studies Week 1'; });

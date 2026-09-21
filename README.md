@@ -23,10 +23,16 @@ to an account so it follows her across devices.
 | ABG Decoder | Randomly generated blood gases: disorder, compensation, cause, action. |
 | Bow-tie builder | The NGN drag-and-drop item, tap style. |
 | What stays with the RN? | Delegation calls. |
-| Quick Fire | Fast questions from the class Kahoot. |
+| Quick Fire | Fast questions: the class Kahoot plus a 95-question pack built from the Exam 1 study guide. |
 | Rhyme & Reason | 55 mnemonic and rhyme cards, with a quiz-me mode. |
 | Muddy points | Everything missed, ready to replay. |
 | Insights | Which study methods are paying off: accuracy, improvement over time, retention of missed items, time per item, and one-tap ratings after each shift. |
+
+## Focus
+
+In course settings, tick one or more materials (for example the Exam 1 study guide) and every mode limits
+itself to items built from those materials. Framework and heuristic cards stay in. Untick everything to use
+all material. Every content item carries a `source` tag naming its material.
 
 ## Courses
 
@@ -52,6 +58,7 @@ content/resp.js       respiratory cases
 content/neuro.js      neuro cases
 content/fluids.js     burns, fluids/electrolytes, sepsis, lifespan cases
 content/week1.js      Week 1 NGN packet cases (trauma, stroke meds, anastomotic leak)
+content/studyguide.js Exam 1 study guide pack: 95 questions + 28 cards, one per guide heading
 content/pools.js      Who-first cards, trend templates, ABG data, quick-fire questions, rhyme deck
 docs/ADDING-CASES.md  how to add cases, cards, rhymes, or a new framework
 ```
