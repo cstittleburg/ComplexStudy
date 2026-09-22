@@ -15,7 +15,7 @@ Every merge to `main` redeploys automatically.
 
 1. At supabase.com create a **new project** for this app (keep it separate from other projects).
 2. Open **SQL editor**, paste the contents of `supabase/migrations/0001_progress.sql`, run it. This creates one `progress` row per user with row-level security so each person can only read their own row.
-3. Under **Authentication → Providers**, make sure **Email** is enabled. Magic-link sign-in is used (no passwords).
+3. Under **Authentication → Sign In / Providers**, make sure the **Email** provider is enabled and that **Allow new users to sign up** is on. There is no separate "magic link" switch: the app calls the one-time-link sign-in, which the Email provider handles. Under **Authentication → Emails** you can edit the "Magic Link" and "Confirm signup" templates if you like.
 4. Under **Authentication → URL configuration**, set the Site URL to your Netlify address and add it to the redirect list.
 5. Under **Project settings → API keys**, copy the **Project URL** and the **publishable** key (`sb_publishable_...`). The older `anon` JWT key also works, but the publishable key is the current one.
 6. Put them in `config.js`:
