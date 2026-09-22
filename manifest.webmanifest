@@ -1,0 +1,12 @@
+{
+  "name": "Shift Ready",
+  "short_name": "Shift Ready",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#EEF2F4",
+  "theme_color": "#0F7C73",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
