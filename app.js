@@ -345,7 +345,7 @@ function questionCard({ item, pt = {}, framework = 'cjmm', stepIndex, key, label
   const fw = FRAMEWORKS[framework]; const step = fw && item.step ? fw.steps.find(s => s.id === item.step) : null;
   const card = el('div', { class: 'qcard' });
   if (extraTop) card.append(extraTop);
-  if (step) card.append(el('div', { class: 'stepchip' }, el('span', { class: 'num' }, (stepIndex ?? fw.steps.indexOf(step)) + 1), step.label, el('span', { class: 'q' }, '· ' + step.question)));
+  if (step && !item.hideStep) card.append(el('div', { class: 'stepchip' }, el('span', { class: 'num' }, (stepIndex ?? fw.steps.indexOf(step)) + 1), step.label, el('span', { class: 'q' }, '· ' + step.question)));
   card.append(el('p', { class: 'prompt' }, fill(item.prompt, pt)));
   if (item.unverified) card.append(el('p', { class: 'hint' }, 'The packet did not include an answer key for this question; the key here was supplied from the course materials.'));
   const box = el('div'); card.append(box);
@@ -589,8 +589,35 @@ function quickFireRound(onDone, n = 3) {
   if (!qs.length) { toast('No quick-fire questions in this course yet.'); return onDone(0); }
   function nextQ() {
     if (i >= qs.length) return onDone(scores.reduce((a, b) => a + b, 0) / scores.length);
-    const q = qs[i]; const item = { type: q.multi ? 'sata' : 'single', step: 'action', prompt: q.q, options: q.options, rationale: q.rationale, n: q.multi ? q.options.filter(o => o.ok).length : undefined };
-    show(plain('Quick Fire', 'Question ' + (i + 1) + ' of ' + qs.length + ' · ' + (q.source || 'your course material'), questionCard({ item, stepIndex: 4, key: 'qf:' + q.q.slice(0, 40), label: 'Quick fire: ' + q.q.slice(0, 60), nextLabel: i === qs.length - 1 ? 'Done' : 'Next', onDone: s => { scores.push(s); i++; nextQ(); } })));
+    const q = qs[i]; const item = { type: q.multi ? 'sata' : 'single', step: q.step || (!q.fw && ((SR.courses.active() || {}).frameworks || ['cjmm']).includes('cjmm') ? 'action' : undefined), hideStep: !!q.fw, prompt: q.q, options: q.options, rationale: q.rationale, n: q.multi ? q.options.filter(o => o.ok).length : undefined };
+    show(plain('Quick Fire', 'Question ' + (i + 1) + ' of ' + qs.length + ' · ' + (q.source || 'your course material'), questionCard({ item, framework: q.fw || 'cjmm', stepIndex: q.fw ? undefined : 4, key: 'qf:' + q.q.slice(0, 40), label: 'Quick fire: ' + q.q.slice(0, 60), nextLabel: i === qs.length - 1 ? 'Done' : 'Next', onDone: s => { scores.push(s); i++; nextQ(); } })));
+  }
+  nextQ();
+}
+
+/* ---------------- RATE DRILL (epidemiologic rates with fresh numbers) ---------------- */
+const RATE_TYPES = [
+  { id: 'incidence', name: 'Incidence rate', per: [1000, 10000, 100000], gen: () => ({ pop: rand(8000, 600000), newc: rand(12, 900), exist: rand(50, 3000) }), num: d => d.newc, den: d => d.pop, formula: 'new cases ÷ population × 10ⁿ', story: d => `A county has a population of ${d.pop.toLocaleString()}. Last year ${d.newc} NEW cases of the disease were reported; ${d.exist.toLocaleString()} people in total were living with it at year end.`, wrong: (d, k) => [d.exist / d.pop * k, d.newc / d.pop * k * 10, d.newc / d.pop * k / 10] },
+  { id: 'prevalence', name: 'Prevalence', per: [1000, 10000, 100000], gen: () => { const total = rand(200, 4000); const deaths = rand(20, Math.floor(total / 2)); return { pop: rand(20000, 900000), total, deaths, newc: rand(10, 300) }; }, num: d => d.total - d.deaths, den: d => d.pop, formula: '(total cases − deaths) ÷ population × 10ⁿ', story: d => `Since reporting began, ${d.total.toLocaleString()} cases of the disease have been reported in a city of ${d.pop.toLocaleString()}; ${d.deaths.toLocaleString()} of those people have died. ${d.newc} of the cases were new this year.`, wrong: (d, k) => [d.total / d.pop * k, d.newc / d.pop * k, d.deaths / d.pop * k], prompt: 'What is the prevalence of the disease (living cases) at year end' },
+  { id: 'crude', name: 'Crude mortality rate', per: [1000, 10000, 100000], gen: () => { const pop = rand(20000, 800000); const deaths = rand(Math.floor(pop * 0.004), Math.floor(pop * 0.02)); return { pop, deaths, cause: rand(Math.floor(deaths * 0.05), Math.floor(deaths * 0.4)) }; }, num: d => d.deaths, den: d => d.pop, formula: 'all deaths ÷ population × 10ⁿ', story: d => `A city of ${d.pop.toLocaleString()} recorded ${d.deaths.toLocaleString()} deaths this year, ${d.cause.toLocaleString()} of them from heart disease.`, wrong: (d, k) => [d.cause / d.pop * k, d.deaths / d.pop * k / 10, d.deaths / d.pop * k * 10] },
+  { id: 'cause', name: 'Cause-specific mortality rate', per: [10000, 100000], gen: () => { const pop = rand(20000, 800000); const deaths = rand(Math.floor(pop * 0.004), Math.floor(pop * 0.02)); const cause = rand(Math.floor(deaths * 0.05), Math.floor(deaths * 0.4)); return { pop, deaths, cause, cases: cause * rand(3, 12) }; }, num: d => d.cause, den: d => d.pop, formula: 'deaths from the cause ÷ population × 10ⁿ', story: d => `A city of ${d.pop.toLocaleString()} recorded ${d.deaths.toLocaleString()} deaths this year. ${d.cause.toLocaleString()} were from cholera, and ${d.cases.toLocaleString()} people had cholera.`, wrong: (d, k) => [d.deaths / d.pop * k, d.cause / d.cases * 100, d.cause / d.pop * k / 10], prompt: 'What is the cause-specific mortality rate for cholera' },
+  { id: 'cfr', name: 'Case fatality rate', per: [100], gen: () => { const cases = rand(200, 200000); return { pop: rand(cases * 3, cases * 40), cases, cause: rand(Math.floor(cases * 0.01), Math.floor(cases * 0.2)) }; }, num: d => d.cause, den: d => d.cases, formula: 'deaths from the disease ÷ people WITH the disease × 100', unit: '%', story: d => `In a city of ${d.pop.toLocaleString()}, ${d.cases.toLocaleString()} people had cholera this year and ${d.cause.toLocaleString()} of them died of it.`, wrong: (d, k) => [d.cause / d.pop * 100000, d.cause / d.cases * 1000, d.cases / d.pop * 100], prompt: 'What is the case fatality rate from cholera' },
+  { id: 'imr', name: 'Infant mortality rate', per: [1000], gen: () => { const births = rand(300, 150000); return { pop: births * rand(15, 40), births, infd: rand(Math.max(2, Math.floor(births * 0.003)), Math.floor(births * 0.035)) }; }, num: d => d.infd, den: d => d.births, formula: 'infant deaths ÷ LIVE BIRTHS × 1,000', story: d => `A state (population ${d.pop.toLocaleString()}) had ${d.births.toLocaleString()} live births this year and ${d.infd.toLocaleString()} deaths of infants under one year old.`, wrong: (d, k) => [d.infd / d.pop * 1000, d.infd / d.births * 100, d.infd / d.births * 10000] },
+  { id: 'birth', name: 'Birth rate', per: [1000], gen: () => { const pop = rand(10000, 900000); return { pop, births: rand(Math.floor(pop * 0.008), Math.floor(pop * 0.05)) }; }, num: d => d.births, den: d => d.pop, formula: 'live births ÷ population × 1,000', story: d => `A county with a population of ${d.pop.toLocaleString()} recorded ${d.births.toLocaleString()} live births this year.`, wrong: (d, k) => [d.births / d.pop * 10000, d.births / d.pop * 100, d.births / d.pop * 100000] },
+  { id: 'attack', name: 'Attack rate', per: [100], gen: () => { const exposed = rand(20, 600); return { exposed, sick: rand(2, Math.floor(exposed * 0.6)), guests: exposed + rand(10, 300) }; }, num: d => d.sick, den: d => d.exposed, formula: 'people exposed who became ill ÷ total exposed × 100', unit: '%', story: d => `At a wedding with ${d.guests} guests, ${d.exposed} people ate the potato salad and ${d.sick} of them developed food poisoning.`, wrong: (d, k) => [d.sick / d.guests * 100, d.sick / d.exposed * 1000, d.exposed / d.guests * 100] }
+];
+function fmtRate(v, per, unit) { const n = v >= 100 ? Math.round(v).toLocaleString() : v.toFixed(2); return unit === '%' ? n + '%' : n + ' per ' + per.toLocaleString(); }
+function ratesRound(onDone, n = 3) {
+  setMode('rates'); const scores = []; let i = 0;
+  function nextQ() {
+    if (i >= n) return onDone(scores.reduce((a, b) => a + b, 0) / scores.length);
+    const t = pick(RATE_TYPES); const d = t.gen(); const per = pick(t.per); const correct = t.num(d) / t.den(d) * per;
+    const opts = [{ t: fmtRate(correct, per, t.unit), ok: true, why: t.formula }];
+    const seen = new Set([opts[0].t]);
+    for (const w of t.wrong(d, per)) { const label = fmtRate(w, per, t.unit); if (!seen.has(label)) { seen.add(label); opts.push({ t: label, ok: false, why: 'A common wrong denominator or multiplier.' }); } }
+    while (opts.length < 4) { const label = fmtRate(correct * pick([0.5, 2, 5]), per, t.unit); if (!seen.has(label)) { seen.add(label); opts.push({ t: label, ok: false, why: 'Arithmetic slip.' }); } }
+    const item = { type: 'single', prompt: t.story(d) + ' ' + (t.prompt || 'What is the ' + t.name.toLowerCase()) + (t.unit === '%' ? '?' : ' per ' + per.toLocaleString() + '?'), options: opts, rationale: t.name + ' = ' + t.formula + '. Here: ' + t.num(d).toLocaleString() + ' ÷ ' + t.den(d).toLocaleString() + ' × ' + per.toLocaleString() + ' = ' + fmtRate(correct, per, t.unit) + '.' };
+    show(plain('Rate Drill', 'Question ' + (i + 1) + ' of ' + n + ' · ' + t.name, questionCard({ item, framework: 'cjmm', key: 'rate:' + t.id, label: 'Rate: ' + t.name, nextLabel: i === n - 1 ? 'Done' : 'Next', onDone: s => { scores.push(s); i++; nextQ(); }, extraTop: el('p', { class: 'hint' }, 'Work it on paper first: pick the numerator, pick the denominator (population at risk!), multiply.') })));
   }
   nextQ();
 }
@@ -659,13 +686,14 @@ function toggleTimer() {
 
 /* ---------------- modes registry ---------------- */
 const Modes = [
-  { id: 'shift', method: 'cases', name: 'Start a shift', tag: '≈ 12 minutes', d: 'One random case through all six steps, plus quick rounds: who first, a trend, an ABG, a delegation call, quick fire.', available: c => c.cases.length > 0, emptyMsg: 'A shift needs at least one case. Add a case pack first.', start() { runShift(); } },
+  { id: 'shift', name: 'Start a shift', tag: '≈ 12 minutes', d: 'A mixed session from this course: a case with quick rounds when the course has cases, otherwise question rounds, rate drills and cards.', available: c => c.cases.length > 0 || c.quickfire.length > 0, emptyMsg: 'A shift needs at least one case or some questions.', start() { runShift(); } },
   { id: 'case', method: 'cases', name: 'Pick a case', tag: c => c.cases.length + ' cases', d: 'Choose a scenario from your course and walk it step by step.', available: c => c.cases.length > 0, start: caseListView },
   { id: 'whofirst', method: 'whofirst', name: 'Who first?', tag: 'Priority lens', d: 'Four clients at 0700. Choose who you see first, then name the cue that decided it.', available: c => c.whofirst.filter(x => x.tier === 1).length > 0 && c.whofirst.length >= 4, start() { whoFirstRound(() => homeView()); } },
   { id: 'trend', method: 'trend', name: 'Trend Detective', tag: 'Evaluate outcomes', d: 'Two columns of a flowsheet with new numbers every time. Better, worse, or same? Then name the threat.', available: c => c.trends.length >= 4, start() { trendRound(() => homeView()); } },
   { id: 'abg', method: 'abg', name: 'ABG Decoder', tag: 'Analyze cues', d: 'Randomly generated blood gases. Name the disorder, the compensation, the cause, and the action.', start() { abgRound(() => homeView()); } },
   { id: 'bowtie', method: 'cases', name: 'Bow-tie builder', tag: 'NGN item', d: 'Condition, two actions, two parameters to monitor. Drag-and-drop practice, tap style.', available: c => c.cases.some(x => x.bowtie), start() { bowtieRound(() => homeView()); } },
   { id: 'delegation', method: 'whofirst', name: 'What stays with the RN?', tag: 'Delegation', d: 'Quick calls on what cannot be delegated.', available: c => c.delegation.length > 0, start() { delegationRound(() => homeView()); } },
+  { id: 'rates', method: 'rates', name: 'Rate Drill', tag: 'Epidemiology', d: 'Incidence, prevalence, mortality, case fatality, infant mortality, birth and attack rates. New numbers every time.', start() { ratesRound(() => homeView(), 4); } },
   { id: 'quickfire', method: 'questions', name: 'Quick Fire', tag: c => c.quickfire.length + ' questions', d: 'Five fast questions. Assess before you act.', available: c => c.quickfire.length > 0, emptyMsg: 'Add practice questions in course settings.', start() { quickFireRound(() => homeView(), SR.content().quickfire.length >= 40 ? 8 : 5); } },
   { id: 'rhymes', method: 'flashcards', name: 'Rhyme & Reason', tag: c => c.rhymes.length + ' cards', d: 'Flashcards, mnemonics, rhymes and heuristics. Flip, or quiz yourself.', available: c => c.rhymes.length > 0, emptyMsg: 'Add flashcards in course settings.', start: rhymesView },
   { id: 'muddy', name: 'Muddy points', tag: 'Review', d: 'Everything you have missed, ready to replay.', start: muddyView },
@@ -675,10 +703,19 @@ const Modes = [
 /* ---------------- shift runner ---------------- */
 function runShift() {
   setMode('case');
-  const content = SR.content(); if (!content.cases.length) { toast('No cases in this course yet.'); return homeView(); }
-  const leastSeen = content.cases.slice().sort((a, b) => (S.seen[a.id] || 0) - (S.seen[b.id] || 0)); const c = pick(leastSeen.slice(0, Math.max(3, Math.ceil(content.cases.length / 3))));
-  const queue = [];
+  const content = SR.content();
   const has = m => !SR.courses.active().methods || SR.courses.active().methods.includes(m);
+  const queue = [];
+  if (!content.cases.length) {
+    if (!content.quickfire.length) { toast('No cases or questions in this course yet.'); return homeView(); }
+    queue.push({ name: 'Quick Fire', mode: 'quickfire', run: d => quickFireRound(d, 8) });
+    if (has('rates')) queue.push({ name: 'Rate Drill', mode: 'rates', run: d => ratesRound(d, 3) });
+    queue.push({ name: 'Quick Fire', mode: 'quickfire', run: d => quickFireRound(d, 8) });
+    if (has('rates')) queue.push({ name: 'Rate Drill', mode: 'rates', run: d => ratesRound(d, 2) });
+    queue.push({ name: 'Quick Fire', mode: 'quickfire', run: d => quickFireRound(d, 8) });
+    return runQueue(queue);
+  }
+  const leastSeen = content.cases.slice().sort((a, b) => (S.seen[a.id] || 0) - (S.seen[b.id] || 0)); const c = pick(leastSeen.slice(0, Math.max(3, Math.ceil(content.cases.length / 3))));
   if (has('whofirst') && content.whofirst.length >= 4) queue.push({ name: 'Who first?', mode: 'whofirst', run: d => whoFirstRound(d) });
   queue.push({ name: c.title, mode: 'case', run: d => runCase(c, { onDone: d, onQuit: endShift }) });
   if (has('trend') && content.trends.length >= 4) queue.push({ name: 'Trend Detective', mode: 'trend', run: d => trendRound(d) });
@@ -686,6 +723,9 @@ function runShift() {
   if (has('whofirst') && content.delegation.length) queue.push({ name: 'Delegation', mode: 'delegation', run: d => delegationRound(d) });
   if (has('questions') && content.quickfire.length) queue.push({ name: 'Quick Fire', mode: 'quickfire', run: d => quickFireRound(d, 3) });
   if (has('whofirst') && content.whofirst.length >= 4) queue.push({ name: 'Who first?', mode: 'whofirst', run: d => whoFirstRound(d) });
+  runQueue(queue);
+}
+function runQueue(queue) {
   const results = []; let i = 0; const bar = $('#shiftbar'); bar.hidden = false; const shiftId = Date.now();
   function setBar() { bar.firstElementChild.style.width = (100 * i / queue.length) + '%'; }
   function next(score) { if (score !== undefined) results.push(score); i++; setBar(); if (i >= queue.length) return finish(); queue[i].run(next); }
@@ -695,7 +735,7 @@ function runShift() {
     const avg = results.reduce((a, b) => a + b, 0) / results.length; const pct = Math.round(avg * 100);
     const modesUsed = [...new Set(queue.map(q => q.mode))];
     const rate = el('div', { class: 'row', style: 'margin-top:8px' });
-    const names = { case: 'The case', whofirst: 'Who first?', trend: 'Trend Detective', abg: 'ABG Decoder', delegation: 'Delegation', quickfire: 'Quick Fire' };
+    const names = { case: 'The case', whofirst: 'Who first?', trend: 'Trend Detective', abg: 'ABG Decoder', delegation: 'Delegation', quickfire: 'Quick Fire', rates: 'Rate Drill' };
     let rated = false;
     modesUsed.forEach(m => rate.append(el('button', { class: 'btn sm', type: 'button', onclick: (e) => { if (rated) return; rated = true; S.ratings.push({ t: Date.now(), c: S.activeCourse, shift: shiftId, m }); save(); for (const b of rate.children) b.classList.toggle('primary', b === e.currentTarget); toast('Noted. This feeds the Insights page.'); } }, names[m] || m)));
     show(el('div', {}, el('div', { class: 'card lift' }, el('div', { class: 'eyebrow' }, 'Shift complete'), el('h1', {}, pct >= 85 ? 'Charge-nurse level.' : pct >= 65 ? 'Good shift. Real progress.' : 'You showed up and finished. That is the habit that passes exams.'), el('div', { class: 'bigxp' }, pct + '% · ' + S.xp + ' XP total'),
