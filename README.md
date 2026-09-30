@@ -36,7 +36,7 @@ all material. Every content item carries a `source` tag naming its material.
 
 ## Courses
 
-The home screen lists courses. NURS 4620 is built in. "Create a course" walks through a short setup: name the course, list the material, choose how to study (cases, prioritization, trends, ABGs, practice questions, flashcards), and pick the frameworks. Flashcards and practice questions can be written in the app; cases and other packs are built by Claude from the exported course spec plus the files.
+The home screen lists courses. Two are built in: NURS 4620 (Complex Healthcare Problems) and NURS 4510 (Community Health Nursing, Exam 1: 100+ questions from the learning objectives, the epidemiology quiz and the study guide, plus a Rate Drill that generates fresh epidemiology rate problems). "Create a course" walks through a short setup: name the course, list the material, choose how to study (cases, prioritization, trends, ABGs, practice questions, flashcards), and pick the frameworks. Flashcards and practice questions can be written in the app; cases and other packs are built by Claude from the exported course spec plus the files.
 
 Every wrong answer gets a short, kind explanation and the case continues to the next step,
 exactly like the exam. Names, ages and answer order change on every replay.
@@ -59,6 +59,7 @@ content/neuro.js      neuro cases
 content/fluids.js     burns, fluids/electrolytes, sepsis, lifespan cases
 content/week1.js      Week 1 NGN packet cases (trauma, stroke meds, anastomotic leak)
 content/studyguide.js Exam 1 study guide pack: 95 questions + 28 cards, one per guide heading
+content/community.js  NURS 4510 Community pack: questions from objectives, epi quiz, study guide; cards
 content/pools.js      Who-first cards, trend templates, ABG data, quick-fire questions, rhyme deck
 docs/ADDING-CASES.md  how to add cases, cards, rhymes, or a new framework
 ```

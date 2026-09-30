@@ -47,6 +47,28 @@ window.FRAMEWORKS = {
       { id: 'i', label: 'Inspect posterior', question: 'Back, spine, alignment.' }
     ]
   },
+  prevention: {
+    id: 'prevention',
+    name: 'Levels of Prevention',
+    short: 'Prevention',
+    mnemonic: 'Prevent it · Find it early · Live with it',
+    steps: [
+      { id: 'primary', label: 'Primary', question: 'Prevent the problem before it occurs.', rhyme: 'Before it starts, keep it away: vaccines, teaching, a healthy day.' },
+      { id: 'secondary', label: 'Secondary', question: 'Find it early: screening and early treatment.', rhyme: 'Catch it early, name it fast: screen today, so it won\'t last.' },
+      { id: 'tertiary', label: 'Tertiary', question: 'Manage an existing condition; rehabilitation and support.', rhyme: 'It\'s already here, so help them cope: rehab, support, and steady hope.' }
+    ]
+  },
+  corefunctions: {
+    id: 'corefunctions',
+    name: 'Core Public Health Functions',
+    short: 'Core functions',
+    mnemonic: 'APA: Assessment, Policy development, Assurance',
+    steps: [
+      { id: 'assessment', label: 'Assessment', question: 'Collect, analyze and share information about the community\'s health.' },
+      { id: 'policy', label: 'Policy development', question: 'Create policies and strategies from the data.' },
+      { id: 'assurance', label: 'Assurance', question: 'Make sure essential services exist and reach people.' }
+    ]
+  },
   sbar: {
     id: 'sbar',
     name: 'SBAR handoff',

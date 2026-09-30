@@ -3,7 +3,7 @@
 (function () {
 'use strict';
 const { el, show } = SR;
-const NAMES = { case: 'Unfolding cases', whofirst: 'Who first?', trend: 'Trend Detective', abg: 'ABG Decoder', delegation: 'Delegation', quickfire: 'Quick Fire', bowtie: 'Bow-tie', rhymes: 'Flashcards' };
+const NAMES = { case: 'Unfolding cases', whofirst: 'Who first?', trend: 'Trend Detective', abg: 'ABG Decoder', delegation: 'Delegation', quickfire: 'Quick Fire', bowtie: 'Bow-tie', rhymes: 'Flashcards', rates: 'Rate Drill' };
 const MIN_N = 12;
 
 function stats(events) {

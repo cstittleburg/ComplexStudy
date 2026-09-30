@@ -7,7 +7,8 @@ const { el, show, toast, shuffle } = SR;
 const S = () => SR.state();
 
 const BUILTIN_ID = 'nurs4620';
-const BUILTIN = {
+const BUILTINS = {};
+const BUILTIN = BUILTINS[BUILTIN_ID] = {
   id: BUILTIN_ID, builtin: true,
   name: 'NURS 4620 · Complex Healthcare Problems Across the Lifespan',
   short: 'NURS 4620', term: 'Fall 2026',
@@ -27,6 +28,20 @@ const BUILTIN = {
   ],
   custom: { flashcards: [], questions: [] }
 };
+BUILTINS.nurs4510 = {
+  id: 'nurs4510', builtin: true,
+  name: 'NURS 4510 · Community Health Nursing',
+  short: 'NURS 4510', term: 'Fall 2026',
+  blurb: 'Exam 1 practice built from the learning objectives, the epidemiology quiz and the study guide: levels of prevention, core functions, culture, program planning, community assessment, epidemiology and rates, families and vulnerable populations.',
+  frameworks: ['prevention', 'corefunctions'],
+  methods: ['questions', 'rates', 'flashcards'],
+  materials: [
+    { name: 'Community Exam 1 Learning Objectives', type: 'Study guide', week: 'Exam 1' },
+    { name: 'Epidemiology Q&A', type: 'Quiz', week: 'Exam 1' },
+    { name: 'NURS 4510 Study Guide', type: 'Study guide', week: 'Exam 1' }
+  ],
+  custom: { flashcards: [], questions: [] }
+};
 
 /* Study methods a course can enable. `method` on a Mode maps to these ids. */
 const METHODS = [
@@ -34,16 +49,20 @@ const METHODS = [
   { id: 'whofirst', name: 'Prioritization & delegation', d: '"Who first?" rounds and delegation calls from patient cards.', source: 'pack' },
   { id: 'trend', name: 'Trend reading', d: 'Flowsheet columns with fresh numbers each time: better, worse, or same.', source: 'pack' },
   { id: 'abg', name: 'ABG decoding', d: 'Randomly generated blood gases (works for any course).', source: 'builtin' },
+  { id: 'rates', name: 'Rate calculations', d: 'Incidence, prevalence, mortality, case fatality, infant mortality, birth and attack rates with fresh numbers every time.', source: 'builtin' },
   { id: 'questions', name: 'Practice questions', d: 'Quick single-answer and select-all questions. You can write these in the app.', source: 'editor' },
   { id: 'flashcards', name: 'Flashcards & mnemonics', d: 'Front/back cards, rhymes, hooks. You can write these in the app.', source: 'editor' }
 ];
 
 function all() {
   const c = S().courses;
-  if (!c[BUILTIN_ID]) { c[BUILTIN_ID] = JSON.parse(JSON.stringify(BUILTIN)); }
-  else { // merge any materials added to the built-in pack since this browser first stored the course
-    const have = new Set((c[BUILTIN_ID].materials || []).map(m => m.name));
-    BUILTIN.materials.forEach(m => { if (!have.has(m.name)) (c[BUILTIN_ID].materials = c[BUILTIN_ID].materials || []).push(JSON.parse(JSON.stringify(m))); });
+  for (const [id, def] of Object.entries(BUILTINS)) {
+    if (!c[id]) { c[id] = JSON.parse(JSON.stringify(def)); continue; }
+    // merge any materials or methods added to the built-in pack since this browser first stored the course
+    const have = new Set((c[id].materials || []).map(m => m.name));
+    def.materials.forEach(m => { if (!have.has(m.name)) (c[id].materials = c[id].materials || []).push(JSON.parse(JSON.stringify(m))); });
+    if (!c[id].methodsEdited) c[id].methods = def.methods.slice();
+    if (!c[id].frameworks || !c[id].frameworks.length) c[id].frameworks = def.frameworks.slice();
   }
   return c;
 }
@@ -134,7 +153,7 @@ function wizard(existing) {
         el('div', { class: 'rhymebox' }, 'What happens next: flashcards and practice questions can be written right away in course settings. Cases, "who first" cards and trend templates come from a content pack; use “Export course spec” in settings and send it to Claude with the files to have one built.')));
     }
   }
-  function finish() { all()[draft.id] = draft; setActive(draft.id); SR.save(); toast(existing ? 'Course saved' : 'Course created'); SR.homeView(); }
+  function finish() { if (existing) draft.methodsEdited = true; all()[draft.id] = draft; setActive(draft.id); SR.save(); toast(existing ? 'Course saved' : 'Course created'); SR.homeView(); }
   render();
 }
 function guessType(n) { n = n.toLowerCase(); if (/ppt|slide/.test(n)) return 'Slides'; if (/case/.test(n)) return 'Case packet'; if (/kahoot|quiz/.test(n)) return 'Quiz'; if (/study.?guide/.test(n)) return 'Study guide'; if (/\.pdf$|\.docx?$/.test(n)) return 'Document'; return 'Other'; }
@@ -220,9 +239,8 @@ function boot() {
   const st = S(); all();
   if (st.customFrameworks) Object.assign(SR.FRAMEWORKS, st.customFrameworks);
   if (!st.activeCourse || !st.courses[st.activeCourse]) { st.activeCourse = BUILTIN_ID; }
-  const n = Object.keys(st.courses).length;
-  if (n === 1) SR.homeView(); else picker();
+  picker();
 }
 
-SR.courses = { BUILTIN_ID, METHODS, all, active, setActive, content, picker, wizard, settings, editor, boot };
+SR.courses = { BUILTIN_ID, BUILTINS, METHODS, all, active, setActive, content, picker, wizard, settings, editor, boot };
 })();
