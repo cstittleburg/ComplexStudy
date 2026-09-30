@@ -75,6 +75,8 @@ You agree not to:
   marked confidential;
 - use the Service to cheat, to share exam content, or to violate your program's
   academic integrity rules;
+- reproduce exam or quiz questions from memory. You may describe an exam in your
+  own words (its format, length and topics), but not recreate its questions;
 - share your account, or access another person's account or data;
 - try to extract our prompts, models, or other users' data, or to interfere with the
   Service's operation;

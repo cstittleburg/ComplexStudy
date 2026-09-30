@@ -23,6 +23,8 @@ Answers gathered after the first draft. Everything below is written against thes
 | University policy on outside study tools | **None.** |
 | Formal research / IRB | **No.** Product feedback only. |
 | Nursing-side quality check | **The pilot student**, who will be an RN by launch. Source material is the professor's own notes and packets. |
+| Training a model | **No.** Open, commercially licensed nursing textbooks become a shared reference library the app looks things up in and fact-checks against (section 6b). |
+| Professor tailoring source | **Student exam debriefs**, in their own words, instead of exam papers (section 10, part 2). |
 | Terms and privacy policy | **Yes, boilerplate now.** See `docs/TERMS.md` and `docs/PRIVACY.md`. Lawyer review before launch. |
 | Adaptive delivery design | **Choice first, evidence over time.** Students pick preferred methods; every shift mixes several, weighted toward their picks; the mix moves gradually toward what measurably works; the student is told when the app finds something they did not expect. Section 10. |
 | Database | The Shift Ready Supabase project is `zenvotibmwyytvvcxjqx`. It is under a different Supabase account than the one connected to this session, so tables there will be created through the dashboard's SQL editor (as `docs/HOSTING.md` already describes) or after that account is connected. **No tables are being created now; this document is planning only.** |
@@ -58,8 +60,9 @@ Found while building: on `main`, "Start a shift" in NURS 4620 stops after the fi
 starts) since the NURS 4510 update was merged. It is fixed on this branch; a one-line fix for `main` alone is
 offered separately.
 
-Not built yet: owner-scoping the built-in packs, consent and terms screens (both before the pilot opens), uploads
-and AI generation (phases 3 and 4), spaced-review scheduling, and choosing content per topic by what works.
+Not built yet: owner-scoping the built-in packs, consent and terms screens (both before the pilot opens), exam
+debriefs, the shared reference library, uploads and AI generation (phases 3 and 4), spaced-review scheduling,
+and choosing content per topic by what works.
 
 ### What "NotebookLM-style" commits you to
 
@@ -379,6 +382,46 @@ it can be added any time. It is not on the pilot's critical path.
 
 ---
 
+## 6b. A shared reference library of open nursing material
+
+**Decision.** Nothing is "trained". Fine-tuning a model mostly changes its style, not its facts,
+it cannot cite where an answer came from, and it goes stale when guidelines change. Instead,
+openly licensed, peer-reviewed nursing textbooks become a shared reference shelf that sits next
+to every student's private notebook. The app looks things up in it; it never learns from it.
+
+What the library does:
+
+1. **Fact-checks generated content.** Every generated item is checked against the library, and
+   anything that disagrees is flagged before a student sees it. This is the biggest safety gain
+   in the whole plan.
+2. **Fills gaps** where a student's own material is thin on a topic.
+3. **Provides a starter pack** for students who have not uploaded anything, which also replaces
+   the built-in NURS 4620 pack and its copyright problem.
+4. **Cites sources** in explanations: "from Open RN Pharmacology, chapter 4".
+
+When the library and the student's course material disagree, the course material wins for the
+exam, and the app shows the conflict instead of hiding it: "Your packet says X, the reference says
+Y; go with your packet and ask in class."
+
+What qualifies:
+
+- **The licence must allow commercial use.** CC BY 4.0 does, with credit to the source; the Open
+  RN textbooks and OpenStax's nursing titles are published under it. Anything marked NC
+  (non-commercial) or ND (no derivatives), such as StatPearls, cannot be used in a paid product.
+  Check each licence before relying on it; they can change.
+- **Peer review and a named publisher** matter more than any claim of "certification".
+- **Publication dates are stored** with each source so outdated guidance can be spotted.
+
+This is where the vector database dropped in section 3 comes back: several textbooks are far too
+large to fit in one prompt, so the library is split into passages and searched. It is processed
+once for everyone, so the cost is small.
+
+The training that is worth doing is on the pilot's own data: the adaptive engine already learns
+per student, and the pilot will show whether its starting rules (15 results per method, a
+10-point gap, 10 points of movement a week) are right.
+
+---
+
 ## 7. Real technical risks
 
 | Risk | Why it bites | Mitigation |
@@ -411,12 +454,14 @@ Rough effort, in working sessions rather than calendar time:
 
 | Phase | Sessions | Notes |
 | --- | --- | --- |
-| 0. Safe to open | 1 to 2 | Owner-scope the built-in pack, consent, spending cap, terms and privacy policy drafts |
-| 1. Events table | 1 | Small code change plus one migration |
-| 2. Choice-weighted mixing and the reveal | 2 to 3 | No new infrastructure; works on existing content (section 10) |
+| 0. Safe to open | 1 to 2 | Owner-scope the built-in pack, consent, spending cap, terms and privacy policy drafts. Terms and privacy drafted. |
+| 1. Events table | 1 | **Built** on the branch; migration written, not run |
+| 2. Choice-weighted mixing and the reveal | 2 to 3 | **Built** on the branch (section 10) |
+| 2b. Exam debriefs | 1 | The form and per-student use; pooling needs the database (section 10, part 2) |
 | 3. Upload and extract | 3 to 4 | First Netlify Function, file parsing, storage |
-| 4. Generation and review screen | 4 to 6 | The prompt, the queue, the versioned payloads, and the review UI; then nursing-side quality checking |
-| 5. Per-item explanation | 1 | Reuses phase 4 plumbing |
+| 3b. Shared reference library | 2 to 3 | Licence check, loading and splitting the texts, search (section 6b) |
+| 4. Generation and review screen | 4 to 6 | The prompt, the queue, the versioned payloads, the review UI, and the library fact-check; then nursing-side quality checking |
+| 5. Per-item explanation | 1 | Reuses phase 4 plumbing; cites the library |
 
 **Phase 0: make it safe to open the door.**
 Owner-scope the built-in NURS 4620 pack (section 4, option A). Add the privacy note and
@@ -682,8 +727,9 @@ Where it comes from, all already in the student's private notebook:
 - The syllabus and exam blueprint (topic weights, framework, item counts).
 - Handed-out case packets with answer keys (the app already uses these).
 - Kahoots, practice quizzes, review sessions (the Week 1 Kahoot is already in the repo).
-- Returned graded exams, where the program returns them. Some do not; then the student's
-  own notes about the exam ("lots of prioritisation, two ABG questions") do the job.
+- The student's own description of each exam after taking it (the exam debrief below).
+  This replaces the earlier idea of uploading returned graded exams, which carried more risk
+  for the same signal.
 - Lecture slides, which show what the professor emphasises versus skims.
 
 **What gets extracted: a testing profile that is structure only.** For a course, after
@@ -714,6 +760,37 @@ professor's actual assessments rather than students' memories of them.
 | Pooling profiles across students | Structure-only profiles for the same course code could be pooled to improve accuracy. If done: opt-in ("help improve NURS 4620 tailoring for everyone"), minimum five contributors before a pooled profile is used (so no one contribution is identifiable), and nothing but the numbers and labels travels. This is defensible. It is also optional; per-student profiles work alone. |
 | Current exams | The terms of service must say: only materials you were given for your own use. A student uploading a photo of this week's exam is a student breaking their integrity code, and the app should not be the tool for it. A sensible guard: refuse to build a profile from a document dated within the current exam window, or simply say so in the terms and rely on it. |
 | The professor finding out | With course-code keying and structure-only profiles, what she would find is "the app noticed I ask a lot of select-all questions about lab values." That is not a thing anyone sues over. Compare the spec's version, where she finds an LLM-written character study of her "traps" built from anonymous posts. |
+
+### Exam debriefs: students describe the test, in their own words
+
+**Decision.** The app does not learn from exam papers. After each exam, a student can describe
+it in their own words through a short form. A description is a set of facts about the test
+(format, length, emphasis), which is what every study group already shares. It copies none of
+the professor's work.
+
+The form asks, per exam:
+
+- roughly how many questions, and how much time;
+- the mix of formats: select-all, single answer, case studies, calculations;
+- which topics felt heaviest;
+- what surprised them.
+
+Four rules keep it on the right side of the line:
+
+| Rule | Why |
+| --- | --- |
+| Descriptions, never reconstructed questions | Recalling and typing out exam questions is an academic integrity violation in nursing programs, and a tool that collects them is a cheating tool. The form is structured so it does not invite that, and Claude screens the free-text box and rejects anything that reads like a verbatim question. |
+| Pooled only after the exam window closes | A student's own debrief shapes their own practice immediately. Sharing across students waits until every section has taken that exam, so a morning section's notes can never reach the afternoon section. |
+| Keyed to the course and exam, never the professor | "NURS 4620, Fall 2026, Exam 1". Same information, no profile of a person. |
+| At least five debriefs before a pooled profile is used, with the count shown | One memory is shaky; many average out. The app says "based on 14 students", so the student can judge. |
+
+The published syllabus and exam blueprint stay the anchor. Debriefs refine it: what the exam
+actually felt like against what the syllabus promised. Both steer the format mix and topic
+weights of generated practice. The terms of service get one line: "Describe exams in your own
+words; don't reproduce questions."
+
+The app can check whether this is working: if students who practised with the debrief-tuned mix
+score better on the next exam than on the last, the debriefs are earning their place.
 
 **University-level tailoring** is the easy case: which clinical judgment framework the
 program uses, which textbook edition, NCLEX blueprint alignment, program-specific
