@@ -16,7 +16,7 @@ to an account so it follows her across devices.
 
 | Mode | What it practices |
 | --- | --- |
-| Start a shift | One random unfolding case (all six steps) plus quick rounds: Who first?, a trend, an ABG, delegation. About 12 minutes. |
+| Start a shift | One unfolding case (all six steps; in a course without cases, a set of practice questions) plus five quick rounds, weighted toward the ways you like to study. About 12 minutes. See "The adaptive mix" below. |
 | Pick a case | 7 unfolding cases taken directly from the professor's case-study packets: acute asthma, COPD exacerbation, pneumonia, acute respiratory failure (respiratory packet) and femur fracture with hemorrhagic shock, stroke with feeding-tube medications, anastomotic leak with septic shock (Week 1 NGN packet). Answer keys are the professor's. |
 | Who first? | Four clients, choose who to see first, then name the cue that decided it. Randomly assembled from 50 patient cards. |
 | Trend Detective | Two columns of a flowsheet with fresh numbers every time. Better, worse, same? Then name the threat. |
@@ -24,9 +24,23 @@ to an account so it follows her across devices.
 | Bow-tie builder | The NGN drag-and-drop item, tap style. |
 | What stays with the RN? | Delegation calls. |
 | Quick Fire | Fast questions: the class Kahoot plus a 95-question pack built from the Exam 1 study guide. |
-| Rhyme & Reason | 55 mnemonic and rhyme cards, with a quiz-me mode. |
+| Rhyme & Reason | Mnemonic and rhyme cards to flip through, plus "Quiz me one at a time": say it, check it, mark it "Got it" or "Not yet". |
 | Muddy points | Everything missed, ready to replay. |
-| Insights | Which study methods are paying off: accuracy, improvement over time, retention of missed items, time per item, and one-tap ratings after each shift. |
+| Insights | What actually works for you (every method measured on the same exam-style items), then each method on its own terms: accuracy, improvement, retention, time per item, and one-tap ratings after each shift. |
+
+## The adaptive mix
+
+Each course asks once which ways of studying you like best (up to two favourites; change them any time in
+course settings). Every shift then leans toward them: favourites get about 70% of the quick rounds, and every
+other method you have switched on keeps at least 10%, so the app can keep checking it.
+
+Behind the scenes, every answer is tagged with its topic (respiratory, neuro, epidemiology, ...). After you
+practise a topic, the app looks at how you do on that topic's exam-style items (the unfolding case, or practice
+questions in courses without cases) the next time you meet them, a day or more later. Once each method has 15 of
+those results, it compares them. When one method is clearly ahead (10 points or more, holding two weeks in a
+row), it tells you, whether that confirms your favourite or surprises you, and the mix moves toward it by at
+most 10 points a week. "Keep my mix" always wins. All of this runs in the browser from the event log; the rules
+live at the top of `adapt.js`.
 
 ## Focus
 
@@ -48,10 +62,11 @@ index.html            page + styles
 app.js                the engine (item types, modes, scoring, chart panel, event log)
 courses.js            course picker, setup wizard, course settings, flashcard/question editors
 insights.js           the Insights page (method effectiveness)
-sync.js               optional accounts + cloud sync (Supabase); off until config.js has keys
-config.js             deployment keys (empty = local-only)
+adapt.js              the adaptive mix: favourites, topic areas, the what-works comparison, shift planning
+sync.js               optional accounts + cloud sync (Supabase), and the upload of answered items
+config.js             database keys: the live one for the live site, a practice one for test copies
 netlify.toml          Netlify static-site config
-supabase/migrations/  SQL for the progress table
+supabase/migrations/  SQL: 0001 the progress table, 0002 the events table (one row per answered item)
 docs/HOSTING.md       Netlify + Supabase setup steps
 content/frameworks.js thinking models (CJMM, Priority Lens, A-to-I survey, SBAR) — add new frameworks here
 content/resp.js       respiratory cases
@@ -62,6 +77,8 @@ content/studyguide.js Exam 1 study guide pack: 95 questions + 28 cards, one per 
 content/community.js  NURS 4510 Community pack: questions from objectives, epi quiz, study guide; cards
 content/pools.js      Who-first cards, trend templates, ABG data, quick-fire questions, rhyme deck
 docs/ADDING-CASES.md  how to add cases, cards, rhymes, or a new framework
+docs/PULSEENGINE-FEASIBILITY.md  the plan for the multi-student version, and what is built so far
+docs/TERMS.md, docs/PRIVACY.md   draft terms of service and privacy policy (need a lawyer's review)
 ```
 
 See `docs/ADDING-CASES.md` for the content format. The plan is to grow this to cover the whole course.

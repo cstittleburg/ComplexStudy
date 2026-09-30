@@ -30,7 +30,8 @@ read, not skimmed. If anything is unclear, email [contact email].
 | **Email address** | To sign you in (we use one-time email links, no passwords) and to contact you about the Service | You, at sign-up |
 | **Uploaded materials** (files you add to a course, and the text we extract from them) | To generate your study content | You |
 | **Course setup** (course names, materials list, study methods and frameworks you chose, notes you wrote) | To organise your study content | You |
-| **Study activity** (which items you answered, your score, time taken, whether it was a retry, the study mode, the date) | To track your progress, adapt which formats and topics you see, and show you the Insights page | Generated as you use the Service |
+| **Study activity** (which items you answered, your score, time taken, whether it was a retry, the study mode and method, the topic area, the date). In the per-item log we keep for looking at patterns across students, each item is stored as a short fingerprint, never its text. | To track your progress, adapt which formats and topics you see, and show you the Insights page | Generated as you use the Service |
+| **Study preferences** (the study methods you mark as favourites, your answers to "which round helped most", and your choices when the app reports what works for you) | To lean your practice toward what you prefer, and to tell you when something else works better | You |
 | **Ratings and feedback** (one-tap ratings after a session, free-text feedback, "this item is wrong" flags) | To improve the Service and fix bad content | You |
 | **Technical data** (browser type, approximate region from IP address, error logs) | To keep the Service running and fix bugs | Your browser and our hosting provider |
 

@@ -15,6 +15,15 @@ Each item can also carry `source: '<material name>'`, the exact name of a materi
 Focus setting in course settings uses it to limit practice to chosen materials. Use `source: 'general'` for
 framework or heuristic items that should stay in every focus.
 
+## 0b. Topic areas (for "what actually works for you")
+
+The app matches practice to later exam-style items by topic area. It works the area out from each item's topic
+label (a case's `system`, a card's `cat`, a question's `topic`, a who-first card's `sys`) and, failing that, from
+the item's text, using the rules at the top of `adapt.js`. You can also set it directly with `area: '<id>'` on
+any item. Current areas: `resp`, `neuro`, `fluids` (fluids, burns and electrolytes), `shock` (shock and sepsis),
+`acidbase`, `priority`, `lifespan`, `prevention`, `infection`, `epi` (epidemiology), `community`, `culture`,
+`family`, `vulnerable`. Give new questions a `topic` and they will almost always land in the right area.
+
 ## 1. An unfolding case
 
 A case is one `window.CASES.push({...})` block. Copy an existing one and change the words.

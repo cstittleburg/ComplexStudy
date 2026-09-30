@@ -27,6 +27,40 @@ Answers gathered after the first draft. Everything below is written against thes
 | Adaptive delivery design | **Choice first, evidence over time.** Students pick preferred methods; every shift mixes several, weighted toward their picks; the mix moves gradually toward what measurably works; the student is told when the app finds something they did not expect. Section 10. |
 | Database | The Shift Ready Supabase project is `zenvotibmwyytvvcxjqx`. It is under a different Supabase account than the one connected to this session, so tables there will be created through the dashboard's SQL editor (as `docs/HOSTING.md` already describes) or after that account is connected. **No tables are being created now; this document is planning only.** |
 
+### Build status (branch `claude/pulseengine-build`, not merged)
+
+Built and tested in a browser, on a branch that is not merged and does not affect the live site:
+
+| Piece | What it does |
+| --- | --- |
+| Test-copy switch (`config.js`) | Only the live address uses the live database. Preview links, local files and localhost use a practice database, or run with sign-in off when none is set. A banner says "Test copy". |
+| Favourites | Each course asks once which study methods the student likes best (up to two). Also in the setup wizard and course settings. |
+| The adaptive mix (`adapt.js`) | Every shift is one exam-format anchor (a case, or a question set) plus 5 quick rounds. Favourites start at about 70% of quick rounds, every switched-on method keeps at least 10%. Rounds are scheduled so a 10% method turns up regularly, not by luck. |
+| Topic areas | Every answer is tagged with a topic area (respiratory, neuro, epidemiology, ...). 228 of 234 built-in questions and all cards map to an area. Answers recorded before this build get their area worked out from the item, so existing history counts from day one. |
+| What works | For each day a method was used on a topic, the app records how the student did on that topic's exam-format items the next time they met them, 20 hours to 7 days later. The same case or question never counts as its own proof. |
+| The reveal | Methods are compared once each has 15 linked results. The app speaks up only when a 10-point gap (or a tie within 5) holds now and a week ago: "better than your favourite", "you were right", "about equal", or by topic. "Use more of it", "Keep my mix", "Tell me more". |
+| Movement | The mix moves toward a clearly better method by at most 10 points a week (15 in total), favourites never below 30% together. If cases win, "Use more of it" adds a second case to each shift. |
+| Scored flashcards | "Quiz me one at a time": say it, check it, "Got it" / "Not yet". Needed so flashcards can be measured at all; self-marked cards earn little XP and do not count as "perfect". |
+| Insights | "What actually works for you" on top (method table, by-topic detail, how it is measured). The old "Lean on X" headline is gone: it graded each method on its own questions, which is the bias this design avoids. |
+| Events table | `supabase/migrations/0002_events.sql` (not run anywhere) and the upload in `sync.js`. One row per answer, no item text. If the table does not exist, the upload switches itself off. |
+
+Where the build differs from the design in section 10, and why:
+
+- **Results are counted per practice day, not per exam-style item.** Crediting each exam item to "the method used
+  most beforehand" would almost always credit the favourite, so a 10% method would never collect enough results.
+  Counting forward from each practice day gives every method results in proportion to its use.
+- **Cases are the anchor, not a quick round.** A full case is too long to be one of five quick rounds. So "use
+  more cases" means a second case per shift (with 3 quick rounds instead of 5).
+- **No favourite set?** The round tapped most often after shifts ("which round helped") stands in as the stated
+  preference for the reveal, but it never changes the mix on its own.
+
+Found while building: on `main`, "Start a shift" in NURS 4620 stops after the first round (the case never
+starts) since the NURS 4510 update was merged. It is fixed on this branch; a one-line fix for `main` alone is
+offered separately.
+
+Not built yet: owner-scoping the built-in packs, consent and terms screens (both before the pilot opens), uploads
+and AI generation (phases 3 and 4), spaced-review scheduling, and choosing content per topic by what works.
+
 ### What "NotebookLM-style" commits you to
 
 This is a useful framing because it is a product principle, not just a legal dodge:
