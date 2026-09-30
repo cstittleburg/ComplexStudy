@@ -103,16 +103,16 @@ function wizard(existing) {
     if (step === 0) frame(el('div', { class: 'form' }, el('p', { class: 'hint' }, 'What is this course? The name shows on the home screen.'), input('Course name', 'name', 'e.g. NURS 4630 Leadership & Management'), input('Short name', 'short', 'e.g. NURS 4630'), input('Term', 'term', 'e.g. Spring 2027'), input('One-line description (optional)', 'blurb', 'What this course is about, in your words')));
     if (step === 1) {
       const list = el('div', { class: 'matlist' });
-      const draw = () => { list.innerHTML = ''; if (!draft.materials.length) list.append(el('p', { class: 'hint' }, 'No material added yet. Add the files, slide decks, packets and notes you have. Claude uses this list to build cases and cards; you can also paste key notes here for quick reference.')); draft.materials.forEach((m, i) => list.append(el('div', { class: 'mat' }, el('div', {}, el('strong', {}, m.name), el('div', { class: 'hint' }, [m.type, m.week].filter(Boolean).join(' · ') + (m.notes ? ' · notes attached' : ''))), el('button', { class: 'btn sm ghost', type: 'button', onclick: () => { draft.materials.splice(i, 1); draw(); } }, 'Remove')))); };
+      const draw = () => { list.innerHTML = ''; if (!draft.materials.length) list.append(el('p', { class: 'hint' }, 'No material added yet. Add the files, slide decks, packets and notes you have. Claude uses this list to build cases and cards; you can also paste key notes here for quick reference.')); draft.materials.forEach((m, i) => list.append(el('div', { class: 'mat' }, el('div', {}, el('strong', {}, m.name), el('div', { class: 'hint' }, [m.type, m.week].filter(Boolean).join(' · ') + (m.notes ? ' · notes attached' : '') + ' · listed, not read')), el('button', { class: 'btn sm ghost', type: 'button', onclick: () => { draft.materials.splice(i, 1); draw(); } }, 'Remove')))); };
       const name = el('input', { type: 'text', placeholder: 'File or material name (e.g. Week 4 Cardiac slides)', style: 'flex:2;min-width:200px' });
-      const type = el('select', {}, ...['Case packet', 'Slides', 'Quiz', 'Reading', 'Reference', 'My notes', 'Other'].map(t => el('option', { value: t }, t)));
+      const type = el('select', {}, ...['Case packet', 'Slides', 'Quiz', 'Study guide', 'Document', 'Reference', 'My notes', 'Other'].map(t => el('option', { value: t }, t)));
       const week = el('input', { type: 'text', placeholder: 'Week / unit', style: 'width:120px' });
       const notes = el('textarea', { placeholder: 'Optional: paste key notes, an answer key, or a summary of this material', rows: 3, style: 'width:100%' });
       const file = el('input', { type: 'file', multiple: true, accept: '.doc,.docx,.ppt,.pptx,.pdf,.txt,.md,.zip', style: 'display:none' });
-      file.addEventListener('change', () => { for (const f of file.files) draft.materials.push({ name: f.name, type: guessType(f.name), week: week.value, size: f.size, addedAt: Date.now() }); draw(); toast(file.files.length + ' file name(s) added. The file itself stays on your computer; send it to Claude to build content from it.'); file.value = ''; });
+      file.addEventListener('change', () => { for (const f of file.files) draft.materials.push({ name: f.name, type: guessType(f.name), week: week.value, size: f.size, addedAt: Date.now() }); draw(); toast(file.files.length + ' file name(s) added. The app cannot open files: send them to Claude to build cases, questions and cards from them.'); file.value = ''; });
       const add = () => { if (!name.value.trim()) return toast('Type a name for the material.'); draft.materials.push({ name: name.value.trim(), type: type.value, week: week.value.trim(), notes: notes.value.trim(), addedAt: Date.now() }); name.value = ''; notes.value = ''; draw(); };
       draw();
-      frame(el('div', { class: 'form' }, el('p', {}, 'Add everything the professor gave you for this course. Files are listed by name (the app never uploads them); the notes box is for anything you want to keep with the course.'), el('div', { class: 'row' }, name, type, week), notes, el('div', { class: 'row' }, el('button', { class: 'btn sm', type: 'button', onclick: add }, '＋ Add material'), el('button', { class: 'btn sm ghost', type: 'button', onclick: () => file.click() }, 'Pick files from my computer'), file), el('h3', { style: 'margin-top:14px' }, 'Materials (' + draft.materials.length + ')'), list));
+      frame(el('div', { class: 'form' }, el('p', {}, 'Add everything the professor gave you for this course. This list is a record of what exists: the app only stores file names and your notes, it cannot open or read the files. To turn files into cases, questions and cards, send the files to Claude (paste the course spec from settings with them).'), el('div', { class: 'row' }, name, type, week), notes, el('div', { class: 'row' }, el('button', { class: 'btn sm', type: 'button', onclick: add }, '＋ Add material'), el('button', { class: 'btn sm ghost', type: 'button', onclick: () => file.click() }, 'Pick files from my computer'), file), el('h3', { style: 'margin-top:14px' }, 'Materials (' + draft.materials.length + ')'), list));
     }
     if (step === 2) {
       const grid = el('div', { class: 'choices' });
@@ -137,7 +137,7 @@ function wizard(existing) {
   function finish() { all()[draft.id] = draft; setActive(draft.id); SR.save(); toast(existing ? 'Course saved' : 'Course created'); SR.homeView(); }
   render();
 }
-function guessType(n) { n = n.toLowerCase(); if (/ppt|slide/.test(n)) return 'Slides'; if (/case/.test(n)) return 'Case packet'; if (/kahoot|quiz/.test(n)) return 'Quiz'; if (/\.pdf$|\.docx?$/.test(n)) return 'Reading'; return 'Other'; }
+function guessType(n) { n = n.toLowerCase(); if (/ppt|slide/.test(n)) return 'Slides'; if (/case/.test(n)) return 'Case packet'; if (/kahoot|quiz/.test(n)) return 'Quiz'; if (/study.?guide/.test(n)) return 'Study guide'; if (/\.pdf$|\.docx?$/.test(n)) return 'Document'; return 'Other'; }
 
 /* ---------------- course settings ---------------- */
 function settings() {
@@ -155,6 +155,7 @@ function settings() {
     el('p', { class: 'hint' }, 'Cases, priority cards and trend templates are written from your course files. Export the course spec (materials, methods, frameworks, and anything you wrote) and send it to Claude along with the files.'),
     el('div', { class: 'row', style: 'margin-top:8px' }, el('button', { class: 'btn', type: 'button', onclick: () => exportSpec(c) }, 'Copy course spec to clipboard'), el('button', { class: 'btn ghost', type: 'button', onclick: () => importCustom(c) }, 'Import cards/questions (JSON)')),
     el('h3', { style: 'margin-top:18px' }, 'Materials (' + (c.materials || []).length + ')'),
+    el('p', { class: 'hint' }, 'A list of what the course includes. The app does not read files; content for each material is built by Claude and appears in the counts above.'),
     el('ul', { class: 'list' }, ...(c.materials || []).map(m => el('li', {}, el('strong', {}, m.name), ' ', el('span', { class: 'hint', style: 'display:inline' }, [m.type, m.week].filter(Boolean).join(' · '))))),
     (c.custom.flashcards.length || c.custom.questions.length) ? el('div', {}, el('h3', { style: 'margin-top:18px' }, 'Your cards and questions'), customList(c)) : null);
   show(el('div', {}, SR.backRow('Course settings'), card));
