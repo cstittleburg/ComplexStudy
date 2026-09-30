@@ -108,7 +108,8 @@ function picker() {
 
 /* ---------------- "build your study environment" wizard ---------------- */
 function wizard(existing) {
-  const draft = existing ? JSON.parse(JSON.stringify(existing)) : { id: 'c' + Date.now().toString(36), name: '', short: '', term: '', blurb: '', frameworks: ['cjmm'], methods: ['cases', 'questions', 'flashcards'], materials: [], custom: { flashcards: [], questions: [] } };
+  const draft = existing ? JSON.parse(JSON.stringify(existing)) : { id: 'c' + Date.now().toString(36), name: '', short: '', term: '', blurb: '', frameworks: ['cjmm'], methods: ['cases', 'questions', 'flashcards'], favorites: [], materials: [], custom: { flashcards: [], questions: [] } };
+  draft.favorites = (draft.favorites || []).filter(m => draft.methods.includes(m));
   let step = 0;
   const steps = ['Course', 'Material', 'How you study', 'Frameworks', 'Review'];
   function frame(body, canNext = true) {
@@ -135,8 +136,9 @@ function wizard(existing) {
     }
     if (step === 2) {
       const grid = el('div', { class: 'choices' });
-      METHODS.forEach(m => { const on = draft.methods.includes(m.id); grid.append(el('button', { class: 'choice' + (on ? ' on' : ''), type: 'button', 'aria-pressed': on, onclick: () => { const k = draft.methods.indexOf(m.id); if (k >= 0) draft.methods.splice(k, 1); else draft.methods.push(m.id); render(); } }, el('span', { class: 'box' }), el('span', {}, el('strong', {}, m.name), el('span', { class: 'hint', style: 'display:block' }, m.d), el('span', { class: 'tag' }, m.source === 'editor' ? 'You can write these in the app' : m.source === 'builtin' ? 'Works for any course' : 'Needs a content pack built from your material')))); });
-      frame(el('div', {}, el('p', { class: 'hint' }, 'How do you want to study this course? You can change this later. The Insights page will tell you which of these actually pays off for you.'), grid));
+      METHODS.forEach(m => { const on = draft.methods.includes(m.id); grid.append(el('button', { class: 'choice' + (on ? ' on' : ''), type: 'button', 'aria-pressed': on, onclick: () => { const k = draft.methods.indexOf(m.id); if (k >= 0) { draft.methods.splice(k, 1); draft.favorites = draft.favorites.filter(f => f !== m.id); } else draft.methods.push(m.id); render(); } }, el('span', { class: 'box' }), el('span', {}, el('strong', {}, m.name), el('span', { class: 'hint', style: 'display:block' }, m.d), el('span', { class: 'tag' }, m.source === 'editor' ? 'You can write these in the app' : m.source === 'builtin' ? 'Works for any course' : 'Needs a content pack built from your material')))); });
+      const favs = SR.adapt && draft.methods.length > 1 ? el('div', { style: 'margin-top:16px' }, el('h3', {}, 'Which do you like best?'), el('p', { class: 'hint', style: 'margin-top:4px' }, 'Pick up to two favourites (optional). Every shift leans toward them. As you study, the app checks what actually sticks for you and tells you when it knows, even if the answer surprises you.'), SR.adapt.favChips(draft.methods, draft.favorites, m => { SR.adapt.toggleFav(draft.favorites, m); render(); })) : null;
+      frame(el('div', {}, el('p', { class: 'hint' }, 'How do you want to study this course? You can change this later. The Insights page will tell you which of these actually pays off for you.'), grid, favs));
     }
     if (step === 3) {
       const grid = el('div', { class: 'choices' });
@@ -149,11 +151,11 @@ function wizard(existing) {
     }
     if (step === 4) {
       frame(el('div', {}, el('div', { class: 'ptbanner' }, el('div', { class: 'avatar' }, (draft.short || draft.name).slice(0, 1).toUpperCase()), el('div', {}, el('strong', {}, draft.name), el('div', { class: 'hint', style: 'margin:0' }, [draft.short, draft.term].filter(Boolean).join(' · ')))),
-        el('ul', { class: 'list', style: 'margin-top:12px' }, el('li', {}, el('strong', {}, 'Material: '), draft.materials.length + ' item(s)'), el('li', {}, el('strong', {}, 'Study methods: '), draft.methods.map(m => METHODS.find(x => x.id === m).name).join(', ')), el('li', {}, el('strong', {}, 'Frameworks: '), draft.frameworks.map(f => (SR.FRAMEWORKS[f] || {}).name || f).join(', '))),
+        el('ul', { class: 'list', style: 'margin-top:12px' }, el('li', {}, el('strong', {}, 'Material: '), draft.materials.length + ' item(s)'), el('li', {}, el('strong', {}, 'Study methods: '), draft.methods.map(m => METHODS.find(x => x.id === m).name).join(', ')), draft.favorites.length ? el('li', {}, el('strong', {}, 'Favourites: '), draft.favorites.map(m => '★ ' + METHODS.find(x => x.id === m).name).join(', ')) : null, el('li', {}, el('strong', {}, 'Frameworks: '), draft.frameworks.map(f => (SR.FRAMEWORKS[f] || {}).name || f).join(', '))),
         el('div', { class: 'rhymebox' }, 'What happens next: flashcards and practice questions can be written right away in course settings. Cases, "who first" cards and trend templates come from a content pack; use “Export course spec” in settings and send it to Claude with the files to have one built.')));
     }
   }
-  function finish() { if (existing) draft.methodsEdited = true; all()[draft.id] = draft; setActive(draft.id); SR.save(); toast(existing ? 'Course saved' : 'Course created'); SR.homeView(); }
+  function finish() { if (existing) draft.methodsEdited = true; draft.favAsked = true; all()[draft.id] = draft; setActive(draft.id); SR.save(); toast(existing ? 'Course saved' : 'Course created'); SR.homeView(); }
   render();
 }
 function guessType(n) { n = n.toLowerCase(); if (/ppt|slide/.test(n)) return 'Slides'; if (/case/.test(n)) return 'Case packet'; if (/kahoot|quiz/.test(n)) return 'Quiz'; if (/study.?guide/.test(n)) return 'Study guide'; if (/\.pdf$|\.docx?$/.test(n)) return 'Document'; return 'Other'; }
@@ -165,6 +167,7 @@ function settings() {
   const card = el('div', { class: 'card' },
     el('div', { class: 'row spread' }, el('div', {}, el('div', { class: 'eyebrow' }, c.term || ''), el('h2', {}, c.name)), el('div', { class: 'row' }, el('button', { class: 'btn sm', type: 'button', onclick: () => wizard(c) }, 'Edit course'), !c.builtin ? el('button', { class: 'btn sm ghost', type: 'button', onclick: () => { if (confirm('Delete this course and its custom cards and questions? Progress events are kept.')) { delete all()[c.id]; S().activeCourse = BUILTIN_ID; SR.save(); picker(); } } }, 'Delete') : null)),
     el('div', { class: 'scoreline', style: 'margin-top:14px' }, el('div', { class: 's' }, el('div', { class: 'b' }, cnt.cases.length), el('div', { class: 'l' }, 'cases')), el('div', { class: 's' }, el('div', { class: 'b' }, cnt.whofirst.length), el('div', { class: 'l' }, 'priority cards')), el('div', { class: 's' }, el('div', { class: 'b' }, cnt.trends.length), el('div', { class: 'l' }, 'trend templates')), el('div', { class: 's' }, el('div', { class: 'b' }, cnt.quickfire.length), el('div', { class: 'l' }, 'questions')), el('div', { class: 's' }, el('div', { class: 'b' }, cnt.rhymes.length), el('div', { class: 'l' }, 'flashcards'))),
+    SR.adapt ? el('div', {}, el('h3', { style: 'margin-top:18px' }, 'How you like to study'), SR.adapt.settingsPanel(c, settings), el('div', { class: 'row', style: 'margin-top:8px' }, el('button', { class: 'btn sm', type: 'button', onclick: () => SR.insights.view() }, 'See what actually works for you'))) : null,
     el('h3', { style: 'margin-top:18px' }, 'Focus'),
     el('p', { class: 'hint' }, 'Limit practice to items built from particular material. Untick everything to use all of it. Framework and heuristic cards always stay in.'),
     focusPanel(c),

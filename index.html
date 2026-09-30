@@ -367,6 +367,17 @@ textarea{font:inherit;color:var(--ink);background:var(--surface2);border:1px sol
 .dtrack{width:100%;height:120px;background:var(--line);border-radius:4px;display:flex;align-items:flex-end;overflow:hidden}
 .dfill{width:100%;background:var(--accent);border-radius:4px 4px 0 0}
 .dlbl{font-size:.65rem;color:var(--muted)}
+/* ---------- adaptive mix (adapt.js) ---------- */
+.envbanner{background:var(--warn-soft);color:var(--ink);border-bottom:1px solid var(--warn);padding:6px 16px;font-size:.85rem;text-align:center}
+.card.reveal{border-color:var(--accent);border-width:2px}
+.favs .btn.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.linkbtn{background:none;border:0;padding:0;color:var(--accent);font-weight:600;cursor:pointer;text-decoration:underline;font-size:inherit}
+.mixline{margin-bottom:0}
+table.mixtable{width:100%;border-collapse:collapse;font-size:.9rem;margin-top:12px}
+table.mixtable th,table.mixtable td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+table.mixtable th{font-size:.72rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+table.mixtable td.num{font-family:var(--mono);font-size:.85rem}
+.cardback{white-space:pre-line;background:var(--accent-soft);border-left:4px solid var(--accent);padding:12px 14px;border-radius:0 var(--r-sm) var(--r-sm) 0;margin-top:4px}
 </style>
 </head>
 <body>
@@ -384,6 +395,7 @@ textarea{font:inherit;color:var(--ink);background:var(--surface2);border:1px sol
   </div>
   <div class="shiftbar" id="shiftbar" hidden><div></div></div>
 </div>
+<div class="envbanner" id="envBanner" role="status" hidden></div>
 <main id="app"></main>
 <canvas id="confetti" hidden></canvas>
 <script src="content/frameworks.js"></script>
@@ -395,6 +407,7 @@ textarea{font:inherit;color:var(--ink);background:var(--surface2);border:1px sol
 <script src="config.js"></script>
 <script src="app.js"></script>
 <script src="courses.js"></script>
+<script src="adapt.js"></script>
 <script src="insights.js"></script>
 <script src="sync.js"></script>
 </body>

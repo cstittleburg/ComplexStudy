@@ -77,15 +77,20 @@ function confetti() {
 
 /* ---------------- scoring / mastery ---------------- */
 let currentMode = null;          // set by whichever mode is running; logged with every answer
-function setMode(m) { currentMode = m; }
-function record({ framework = 'cjmm', step, score, key, label, ms }) {
+let currentArea = null;          // topic area of the item on screen (adapt.js); lets the app match practice to later exam-style items
+function setMode(m) { currentMode = m; currentArea = null; }
+function setArea(a) { currentArea = a || null; }
+const areaOf = (x, kind) => (SR.adapt ? SR.adapt.areaOf(x, kind) : null);
+/* selfRated: the learner marked it themselves (flashcards). It still feeds the event log, but earns little XP and
+   does not count toward the "perfect" rate, which is about graded answers. */
+function record({ framework = 'cjmm', step, score, key, label, ms, selfRated }) {
   S.answered++;
   const wasMuddy = !!(key && S.muddy[key]);
-  S.events.push({ t: Date.now(), c: S.activeCourse, m: currentMode, k: key, f: framework, s: step, sc: +score.toFixed(2), ms: ms || 0, re: wasMuddy ? 1 : 0 });
+  S.events.push({ t: Date.now(), c: S.activeCourse, m: currentMode, a: currentArea, k: key, f: framework, s: step, sc: +score.toFixed(2), ms: ms || 0, re: wasMuddy ? 1 : 0 });
   if (S.events.length > 6000) S.events.splice(0, S.events.length - 6000);
-  const xp = Math.round(score * 10) + (score === 1 ? 3 : 0);
+  const xp = selfRated ? (score === 1 ? 2 : 1) : Math.round(score * 10) + (score === 1 ? 3 : 0);
   S.xp += xp;
-  if (score === 1) S.perfect++;
+  if (score === 1 && !selfRated) S.perfect++;
   if (step) {
     const mk = framework + ':' + step; const m = S.mastery[mk] || { n: 0, s: 0 };
     m.n++; m.s += score; S.mastery[mk] = m;
@@ -407,6 +412,7 @@ function show(node) { app.innerHTML = ''; const v = el('div', { class: 'view' },
 function masteryPct(fw, step) { const m = S.mastery[fw + ':' + step]; return m && m.n ? Math.round(100 * m.s / m.n) : 0; }
 
 function homeView() {
+  $('#shiftbar').hidden = true;
   const course = SR.courses.active(); if (!course) return SR.courses.picker();
   const fwId = (course.frameworks && course.frameworks[0]) || 'cjmm'; const fw = FRAMEWORKS[fwId] || FRAMEWORKS.cjmm;
   const mastery = el('div', { class: 'mastery', style: fw.steps.length > 6 ? 'grid-template-columns:repeat(auto-fit,minmax(110px,1fr))' : '' });
@@ -417,16 +423,19 @@ function homeView() {
   const badges = el('div', { class: 'badges' }); BADGES.forEach(b => badges.append(el('span', { class: 'badge' + (S.badges.includes(b.id) ? '' : ' locked'), title: b.d }, (S.badges.includes(b.id) ? '★ ' : '☆ ') + b.name)));
   const muddyN = Object.keys(S.muddy).length;
   const greet = S.shifts === 0 ? 'Welcome to your first shift.' : `Shift ${S.shifts + 1}. ${pick(['Notice the change.', 'Name the threat.', 'Act, then reassess.', 'Map it, don\'t memorize it.'])}`;
-  const canShift = content.cases.length > 0;
+  const canShift = Modes[0].available(content);
   const rhyme = content.rhymes.length ? pick(content.rhymes).back.split('\n')[0] : (fw.mnemonic || '');
+  const adaptCards = SR.adapt ? SR.adapt.homeCards(course) : [];
   show(el('div', {},
     el('div', { class: 'hero' },
       el('div', { class: 'card lift' }, el('div', { class: 'row spread' }, el('div', { class: 'eyebrow' }, course.name), el('button', { class: 'btn sm ghost', type: 'button', onclick: () => SR.courses.picker() }, 'Switch course')),
         content.focus ? el('div', { class: 'row', style: 'margin-top:6px' }, el('span', { class: 'stat' }, '🎯 Focus: ' + content.focus.join(', ')), el('button', { class: 'btn sm ghost', type: 'button', onclick: () => SR.courses.settings() }, 'change')) : null, el('h1', {}, greet), el('p', { class: 'lead' }, course.blurb || 'Short practice sessions built from your course material. One shift takes about twelve minutes. Then take a break; you earned it.'),
         el('div', { class: 'row', style: 'margin-top:16px' }, canShift ? el('button', { class: 'btn primary', type: 'button', onclick: () => Modes[0].start() }, '▶ Start a shift') : el('button', { class: 'btn primary', type: 'button', onclick: () => SR.courses.settings() }, '＋ Add content'), content.cases.length ? el('button', { class: 'btn', type: 'button', onclick: () => caseListView() }, 'Pick a case') : null, muddyN ? el('button', { class: 'btn', type: 'button', onclick: () => muddyView() }, `Muddy points (${muddyN})`) : null, el('button', { class: 'btn', type: 'button', onclick: () => SR.insights.view() }, 'Insights')),
+        canShift && SR.adapt ? SR.adapt.mixLine(course) : null,
         rhyme ? el('div', { class: 'rhymebox' }, '“' + rhyme + '”') : null),
       el('div', { class: 'card' }, el('div', { class: 'eyebrow' }, 'Your map of the model · ' + fw.short), el('p', { class: 'hint', style: 'margin:4px 0 10px' }, 'Tap a step for its rhyme. Bars fill as you get items right.'), mastery,
         el('div', { class: 'scoreline', style: 'margin-top:14px' }, el('div', { class: 's' }, el('div', { class: 'b' }, S.shifts), el('div', { class: 'l' }, 'shifts')), el('div', { class: 's' }, el('div', { class: 'b' }, S.answered), el('div', { class: 'l' }, 'items')), el('div', { class: 's' }, el('div', { class: 'b' }, S.answered ? Math.round(100 * S.perfect / S.answered) + '%' : '—'), el('div', { class: 'l' }, 'perfect'))))),
+    ...adaptCards,
     el('div', { class: 'row spread', style: 'margin:6px 0 12px' }, el('h2', {}, 'Practice modes'), el('button', { class: 'btn sm ghost', type: 'button', onclick: () => SR.courses.settings() }, 'Course settings')), modes,
     el('div', { class: 'card', style: 'margin-top:22px' }, el('div', { class: 'eyebrow' }, 'Badges'), el('div', { style: 'height:8px' }), badges)
   ));
@@ -443,7 +452,7 @@ function backRow(title, extra) { return el('div', { class: 'row spread', style: 
 
 /* ---------------- case runner ---------------- */
 function runCase(c, opts = {}) {
-  setMode('case');
+  setMode('case'); setArea(areaOf(c, 'case'));
   const pt = makePatient(c); const fwId = c.framework || 'cjmm'; const fw = FRAMEWORKS[fwId];
   const items = c.items.slice(); if (c.bowtie) items.push({ ...c.bowtie, type: 'bowtie', step: null, bonus: true });
   const scores = []; let idx = 0;
@@ -491,7 +500,7 @@ const LET = ['A', 'B', 'C', 'D'];
 function whoFirstRound(onDone) {
   setMode('whofirst');
   const POOL = SR.content().whofirst; const t0 = Date.now();
-  const urgent = pick(POOL.filter(x => x.tier === 1));
+  const urgent = pick(POOL.filter(x => x.tier === 1)); setArea(areaOf(urgent, 'whofirst'));
   const others = sample(POOL.filter(x => x.tier !== 1), 3);
   const cards = shuffle([urgent, ...others]);
   let sel = null; let phase = 1; let s1 = 0;
@@ -518,7 +527,7 @@ function whoFirstRound(onDone) {
 
 function delegationRound(onDone) {
   setMode('delegation');
-  const d = pick(SR.content().delegation);
+  const d = pick(SR.content().delegation); setArea(areaOf(d, 'delegation'));
   const item = { type: 'single', step: 'now', prompt: 'The RN is working with an unlicensed assistive person. Which of these must the RN address personally?', options: [{ t: d.rn, ok: true, why: d.why }, ...sample(d.others, 3).map(t => ({ t, ok: false, why: 'Stable client, routine task: can be delegated.' }))], rationale: 'Delegation is prioritization of nursing judgment. Assessment, teaching, evaluation, and unstable clients stay with the RN. “Assess, Teach, Evaluate, Unstable: stays on the RN’s table.”' };
   show(plain('What stays with the RN?', 'Delegation', questionCard({ item, framework: 'lens', stepIndex: 4, key: 'del:' + d.rn.slice(0, 40), label: 'Delegation: ' + d.rn.slice(0, 60), nextLabel: 'Done', onDone })));
 }
@@ -538,7 +547,7 @@ function genTrend(tpl) {
 }
 function trendRound(onDone) {
   setMode('trend');
-  const TT = SR.content().trends; const tpl = pick(TT); const rows = genTrend(tpl);
+  const TT = SR.content().trends; const tpl = pick(TT); const rows = genTrend(tpl); setArea(areaOf(tpl, 'trend'));
   const item = { type: 'trend', step: 'evaluate', prompt: tpl.title + '. For each finding, is the client improving, declining, or unchanged?', rows, rationale: 'Compare each value to the previous one, not to the normal range. Then read all the rows together: they tell one story.' };
   let s1 = 0;
   const q2 = () => {
@@ -562,7 +571,7 @@ function genABG() {
 }
 function abgRound(onDone) {
   setMode('abg');
-  const g = genABG(); const scores = [];
+  const g = genABG(); const scores = []; setArea(SR.adapt ? SR.adapt.abgArea(g.d.id) : null);
   const vals = el('div', { class: 'abgvals' },
     el('div', { class: 'v' + (g.pH < 7.35 ? ' lo' : g.pH > 7.45 ? ' hi' : '') }, el('div', { class: 'n' }, g.pH), el('div', { class: 'l' }, 'pH'), el('div', { class: 'ref' }, '7.35–7.45')),
     el('div', { class: 'v' + (g.co2 < 35 ? ' lo' : g.co2 > 45 ? ' hi' : '') }, el('div', { class: 'n' }, g.co2), el('div', { class: 'l' }, 'PaCO₂'), el('div', { class: 'ref' }, '35–45')),
@@ -589,7 +598,7 @@ function quickFireRound(onDone, n = 3) {
   if (!qs.length) { toast('No quick-fire questions in this course yet.'); return onDone(0); }
   function nextQ() {
     if (i >= qs.length) return onDone(scores.reduce((a, b) => a + b, 0) / scores.length);
-    const q = qs[i]; const item = { type: q.multi ? 'sata' : 'single', step: q.step || (!q.fw && ((SR.courses.active() || {}).frameworks || ['cjmm']).includes('cjmm') ? 'action' : undefined), hideStep: !!q.fw, prompt: q.q, options: q.options, rationale: q.rationale, n: q.multi ? q.options.filter(o => o.ok).length : undefined };
+    const q = qs[i]; setArea(areaOf(q, 'quickfire')); const item = { type: q.multi ? 'sata' : 'single', step: q.step || (!q.fw && ((SR.courses.active() || {}).frameworks || ['cjmm']).includes('cjmm') ? 'action' : undefined), hideStep: !!q.fw, prompt: q.q, options: q.options, rationale: q.rationale, n: q.multi ? q.options.filter(o => o.ok).length : undefined };
     show(plain('Quick Fire', 'Question ' + (i + 1) + ' of ' + qs.length + ' · ' + (q.source || 'your course material'), questionCard({ item, framework: q.fw || 'cjmm', stepIndex: q.fw ? undefined : 4, key: 'qf:' + q.q.slice(0, 40), label: 'Quick fire: ' + q.q.slice(0, 60), nextLabel: i === qs.length - 1 ? 'Done' : 'Next', onDone: s => { scores.push(s); i++; nextQ(); } })));
   }
   nextQ();
@@ -608,7 +617,7 @@ const RATE_TYPES = [
 ];
 function fmtRate(v, per, unit) { const n = v >= 100 ? Math.round(v).toLocaleString() : v.toFixed(2); return unit === '%' ? n + '%' : n + ' per ' + per.toLocaleString(); }
 function ratesRound(onDone, n = 3) {
-  setMode('rates'); const scores = []; let i = 0;
+  setMode('rates'); setArea('epi'); const scores = []; let i = 0;
   function nextQ() {
     if (i >= n) return onDone(scores.reduce((a, b) => a + b, 0) / scores.length);
     const t = pick(RATE_TYPES); const d = t.gen(); const per = pick(t.per); const correct = t.num(d) / t.den(d) * per;
@@ -625,7 +634,7 @@ function ratesRound(onDone, n = 3) {
 function bowtieRound(onDone) {
   setMode('bowtie');
   const withBT = SR.content().cases.filter(x => x.bowtie); if (!withBT.length) { toast('No bow-tie items in this course yet.'); return onDone(0); }
-  const c = pick(withBT); const pt = makePatient(c);
+  const c = pick(withBT); const pt = makePatient(c); setArea(areaOf(c, 'case'));
   const chart = chartPanel(c, pt); if (c.bowtie.chart) chart.apply(c.bowtie.chart);
   const item = { ...c.bowtie, type: 'bowtie' };
   const card = questionCard({ item, pt, key: c.id + '#bowtie', label: c.title + ' · Bow-tie', nextLabel: 'Done', onDone });
@@ -645,7 +654,31 @@ function rhymesView() {
     for (const r of list) { const f = el('div', { class: 'flip', role: 'button', tabindex: 0 }, el('div', { class: 'inner' }, el('div', { class: 'face' }, el('div', { class: 'cat' }, r.cat), el('div', { class: 'f' }, r.front), el('div', { class: 'tip' }, quiz ? 'Say it out loud, then tap to check.' : 'Tap to flip')), el('div', { class: 'face back' }, el('div', { class: 'cat' }, r.cat), r.back, el('div', { class: 'tip' }, r.tip || '')))); const tog = () => f.classList.toggle('on'); f.addEventListener('click', tog); f.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); tog(); } }); deck.append(f); }
   }
   draw();
-  show(el('div', {}, backRow('Rhyme & Reason', el('button', { class: 'btn sm', type: 'button', onclick: () => SR.courses.editor('flashcards') }, '+ Add a card')), el('p', { class: 'hint' }, 'Mnemonics, rhymes and heuristics for this course. Tap a card to flip it. “Quiz me” shuffles the deck so you say the back before you see it.'), filters, deck));
+  const oneByOne = el('button', { class: 'btn sm primary', type: 'button', onclick: () => cardsRound(() => rhymesView(), 10, R.filter(r => active === 'All' || r.cat === active)) }, '▶ Quiz me one at a time');
+  show(el('div', {}, backRow('Rhyme & Reason', el('button', { class: 'btn sm', type: 'button', onclick: () => SR.courses.editor('flashcards') }, '+ Add a card')), el('p', { class: 'hint' }, 'Mnemonics, rhymes and heuristics for this course. Tap a card to flip it. “Quiz me” shuffles the deck so you say the back before you see it. “One at a time” asks you to mark each card, and those marks count toward what works for you.'), el('div', { class: 'row', style: 'margin-bottom:12px' }, oneByOne), filters, deck));
+}
+
+/* Flashcards one at a time: front, say it, show the answer, then an honest "Got it" or "Not yet".
+   Used as a quick round in shifts, and from Rhyme & Reason. Cards marked "Not yet" come back first next time. */
+function cardsRound(onDone, n = 5, pool) {
+  setMode('rhymes');
+  const R = pool || SR.content().rhymes;
+  if (!R.length) { toast('No flashcards in this course yet.'); return onDone(0); }
+  const keyOf = r => 'card:' + r.front.slice(0, 40);
+  const missed = R.filter(r => S.muddy[keyOf(r)]);
+  const deck = shuffle(missed).concat(shuffle(R.filter(r => !S.muddy[keyOf(r)]))).slice(0, n);
+  const scores = []; let i = 0;
+  function nextCard() {
+    if (i >= deck.length) return onDone(scores.reduce((a, b) => a + b, 0) / scores.length);
+    const r = deck[i]; setArea(areaOf(r, 'rhyme')); const t0 = Date.now(); let done = false;
+    const back = el('div', { class: 'cardback', hidden: true }, r.back, r.tip ? el('div', { class: 'hint', style: 'margin:8px 0 0' }, r.tip) : null);
+    const mark = sc => { if (done) return; done = true; record({ score: sc, key: keyOf(r), label: 'Card: ' + r.front.slice(0, 60), ms: Date.now() - t0, selfRated: true }); scores.push(sc); i++; nextCard(); };
+    const rate = el('div', { class: 'actions', hidden: true }, el('button', { class: 'btn', type: 'button', onclick: () => mark(0) }, 'Not yet'), el('span', { class: 'spacer' }), el('button', { class: 'btn primary', type: 'button', onclick: () => mark(1) }, 'Got it'));
+    const reveal = el('button', { class: 'btn primary', type: 'button', onclick: () => { back.hidden = false; reveal.parentNode.hidden = true; rate.hidden = false; rate.querySelector('.primary').focus(); } }, 'Show answer');
+    const card = el('div', { class: 'qcard' }, el('div', { class: 'eyebrow' }, r.cat || 'Flashcard'), el('p', { class: 'prompt', style: 'margin-top:6px' }, r.front), el('p', { class: 'hint' }, 'Say the answer out loud first. Then check, and be honest: “Not yet” brings the card back sooner.'), back, el('div', { class: 'actions' }, reveal), rate);
+    show(plain('Flashcards', 'Card ' + (i + 1) + ' of ' + deck.length, card));
+  }
+  nextCard();
 }
 
 /* ---------------- muddy points ---------------- */
@@ -686,7 +719,7 @@ function toggleTimer() {
 
 /* ---------------- modes registry ---------------- */
 const Modes = [
-  { id: 'shift', name: 'Start a shift', tag: '≈ 12 minutes', d: 'A mixed session from this course: a case with quick rounds when the course has cases, otherwise question rounds, rate drills and cards.', available: c => c.cases.length > 0 || c.quickfire.length > 0, emptyMsg: 'A shift needs at least one case or some questions.', start() { runShift(); } },
+  { id: 'shift', name: 'Start a shift', tag: '≈ 12 minutes', d: 'One exam-style case (or question set) plus five quick rounds, weighted toward the ways you like to study.', available: c => c.cases.length > 0 || c.quickfire.length > 0 || c.rhymes.length > 0, emptyMsg: 'A shift needs cases, questions or flashcards.', start() { runShift(); } },
   { id: 'case', method: 'cases', name: 'Pick a case', tag: c => c.cases.length + ' cases', d: 'Choose a scenario from your course and walk it step by step.', available: c => c.cases.length > 0, start: caseListView },
   { id: 'whofirst', method: 'whofirst', name: 'Who first?', tag: 'Priority lens', d: 'Four clients at 0700. Choose who you see first, then name the cue that decided it.', available: c => c.whofirst.filter(x => x.tier === 1).length > 0 && c.whofirst.length >= 4, start() { whoFirstRound(() => homeView()); } },
   { id: 'trend', method: 'trend', name: 'Trend Detective', tag: 'Evaluate outcomes', d: 'Two columns of a flowsheet with new numbers every time. Better, worse, or same? Then name the threat.', available: c => c.trends.length >= 4, start() { trendRound(() => homeView()); } },
@@ -701,41 +734,48 @@ const Modes = [
 ];
 
 /* ---------------- shift runner ---------------- */
+/* A shift is one exam-format anchor (an unfolding case, or a question set in courses without cases) plus quick
+   rounds. adapt.js decides which methods the quick rounds come from, weighted toward the learner's favourites
+   and, over time, toward what measurably works for them. */
+function quickRound(method, content) {
+  const wf = content.whofirst.some(x => x.tier === 1) && content.whofirst.length >= 4, dl = content.delegation.length > 0;
+  if (method === 'whofirst') return wf && (!dl || Math.random() < 0.7) ? { name: 'Who first?', mode: 'whofirst', run: d => whoFirstRound(d) } : dl ? { name: 'Delegation', mode: 'delegation', run: d => delegationRound(d) } : null;
+  if (method === 'trend') return content.trends.length >= 4 ? { name: 'Trend Detective', mode: 'trend', run: d => trendRound(d) } : null;
+  if (method === 'abg') return { name: 'ABG Decoder', mode: 'abg', run: d => abgRound(d) };
+  if (method === 'rates') return { name: 'Rate Drill', mode: 'rates', run: d => ratesRound(d, 3) };
+  if (method === 'questions') return content.quickfire.length ? { name: 'Quick Fire', mode: 'quickfire', run: d => quickFireRound(d, 3) } : null;
+  if (method === 'flashcards') return content.rhymes.length ? { name: 'Flashcards', mode: 'rhymes', run: d => cardsRound(d, 5) } : null;
+  return null;
+}
 function runShift() {
-  setMode('case');
-  const content = SR.content();
-  const has = m => !SR.courses.active().methods || SR.courses.active().methods.includes(m);
+  const course = SR.courses.active(); const content = SR.content();
+  const plan = SR.adapt ? SR.adapt.planShift(course) : { ym: content.cases.length ? 'case' : content.quickfire.length ? 'quickfire' : null, anchors: 1, picks: ['whofirst', 'trend', 'abg', 'questions', 'flashcards'] };
+  const quick = plan.picks.map(m => quickRound(m, content)).filter(Boolean);
+  const anchors = [];
+  if (plan.ym === 'case') {
+    const leastSeen = content.cases.slice().sort((a, b) => (S.seen[a.id] || 0) - (S.seen[b.id] || 0));
+    sample(leastSeen.slice(0, Math.max(3, Math.ceil(content.cases.length / 3))), plan.anchors).forEach(c => anchors.push({ name: c.title, mode: 'case', run: d => runCase(c, { onDone: d, onQuit: homeView }) }));
+  } else if (plan.ym === 'quickfire') anchors.push({ name: 'Question set', mode: 'quickfire', run: d => quickFireRound(d, 6) });
+  if (!anchors.length && !quick.length) { toast('This course needs cases, questions or flashcards before a shift can start.'); return homeView(); }
+  // a quick round to warm up, then the anchor, then the rest; a second case goes about halfway through the rest
   const queue = [];
-  if (!content.cases.length) {
-    if (!content.quickfire.length) { toast('No cases or questions in this course yet.'); return homeView(); }
-    queue.push({ name: 'Quick Fire', mode: 'quickfire', run: d => quickFireRound(d, 8) });
-    if (has('rates')) queue.push({ name: 'Rate Drill', mode: 'rates', run: d => ratesRound(d, 3) });
-    queue.push({ name: 'Quick Fire', mode: 'quickfire', run: d => quickFireRound(d, 8) });
-    if (has('rates')) queue.push({ name: 'Rate Drill', mode: 'rates', run: d => ratesRound(d, 2) });
-    queue.push({ name: 'Quick Fire', mode: 'quickfire', run: d => quickFireRound(d, 8) });
-    return runQueue(queue);
-  }
-  const leastSeen = content.cases.slice().sort((a, b) => (S.seen[a.id] || 0) - (S.seen[b.id] || 0)); const c = pick(leastSeen.slice(0, Math.max(3, Math.ceil(content.cases.length / 3))));
-  if (has('whofirst') && content.whofirst.length >= 4) queue.push({ name: 'Who first?', mode: 'whofirst', run: d => whoFirstRound(d) });
-  queue.push({ name: c.title, mode: 'case', run: d => runCase(c, { onDone: d, onQuit: endShift }) });
-  if (has('trend') && content.trends.length >= 4) queue.push({ name: 'Trend Detective', mode: 'trend', run: d => trendRound(d) });
-  if (has('abg')) queue.push({ name: 'ABG Decoder', mode: 'abg', run: d => abgRound(d) });
-  if (has('whofirst') && content.delegation.length) queue.push({ name: 'Delegation', mode: 'delegation', run: d => delegationRound(d) });
-  if (has('questions') && content.quickfire.length) queue.push({ name: 'Quick Fire', mode: 'quickfire', run: d => quickFireRound(d, 3) });
-  if (has('whofirst') && content.whofirst.length >= 4) queue.push({ name: 'Who first?', mode: 'whofirst', run: d => whoFirstRound(d) });
+  if (quick.length) queue.push(quick.shift());
+  if (anchors.length) queue.push(anchors.shift());
+  const half = Math.ceil(quick.length / 2);
+  quick.forEach((q, i) => { queue.push(q); if (i === half - 1 && anchors.length) queue.push(anchors.shift()); });
+  queue.push(...anchors);
   runQueue(queue);
 }
 function runQueue(queue) {
   const results = []; let i = 0; const bar = $('#shiftbar'); bar.hidden = false; const shiftId = Date.now();
   function setBar() { bar.firstElementChild.style.width = (100 * i / queue.length) + '%'; }
   function next(score) { if (score !== undefined) results.push(score); i++; setBar(); if (i >= queue.length) return finish(); queue[i].run(next); }
-  function endShift() { bar.hidden = true; homeView(); }
   function finish() {
     S.shifts++; checkBadges(); save(); bar.hidden = true;
     const avg = results.reduce((a, b) => a + b, 0) / results.length; const pct = Math.round(avg * 100);
     const modesUsed = [...new Set(queue.map(q => q.mode))];
     const rate = el('div', { class: 'row', style: 'margin-top:8px' });
-    const names = { case: 'The case', whofirst: 'Who first?', trend: 'Trend Detective', abg: 'ABG Decoder', delegation: 'Delegation', quickfire: 'Quick Fire', rates: 'Rate Drill' };
+    const names = { case: 'The case', whofirst: 'Who first?', trend: 'Trend Detective', abg: 'ABG Decoder', delegation: 'Delegation', quickfire: 'Quick Fire', rates: 'Rate Drill', rhymes: 'Flashcards', bowtie: 'Bow-tie' };
     let rated = false;
     modesUsed.forEach(m => rate.append(el('button', { class: 'btn sm', type: 'button', onclick: (e) => { if (rated) return; rated = true; S.ratings.push({ t: Date.now(), c: S.activeCourse, shift: shiftId, m }); save(); for (const b of rate.children) b.classList.toggle('primary', b === e.currentTarget); toast('Noted. This feeds the Insights page.'); } }, names[m] || m)));
     show(el('div', {}, el('div', { class: 'card lift' }, el('div', { class: 'eyebrow' }, 'Shift complete'), el('h1', {}, pct >= 85 ? 'Charge-nurse level.' : pct >= 65 ? 'Good shift. Real progress.' : 'You showed up and finished. That is the habit that passes exams.'), el('div', { class: 'bigxp' }, pct + '% · ' + S.xp + ' XP total'),
@@ -750,7 +790,7 @@ function runQueue(queue) {
 /* ---------------- public API for the other modules ---------------- */
 window.SR = {
   el, show, toast, shuffle, sample, pick, rand, fill, makePatient, esc,
-  state: () => S, save, record, setMode, questionCard, backRow, plain, chartPanel, runCase, homeView, settingsView, caseListView,
+  state: () => S, save, record, setMode, setArea, questionCard, backRow, plain, chartPanel, runCase, runShift, cardsRound, homeView, settingsView, caseListView,
   ItemTypes, Modes, BADGES, FRAMEWORKS, masteryPct,
   hooks: {},            // onSave(state) — set by sync.js
   courses: null,        // set by courses.js

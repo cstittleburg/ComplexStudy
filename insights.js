@@ -46,20 +46,13 @@ function view() {
   const trend = el('div', { class: 'daybars' });
   days.slice(-14).forEach(d => { const b = byDay[d]; const v = b.sum / b.n; trend.append(el('div', { class: 'daycol', title: d + ': ' + pctF(v) + ' over ' + b.n + ' items' }, el('div', { class: 'dtrack' }, el('div', { class: 'dfill', style: 'height:' + Math.round(v * 100) + '%' })), el('div', { class: 'dlbl mono' }, d.slice(5)))); });
 
-  // Recommendation: only with enough data
-  const eligible = st.filter(b => b.n >= MIN_N);
-  let rec = null;
-  if (eligible.length >= 2) {
-    const score = b => (b.gain ?? 0) * 2 + (b.retention ?? b.acc) + (rateBy[b.m] ? 0.1 * Math.min(3, rateBy[b.m]) : 0);
-    const ranked = eligible.slice().sort((a, b) => score(b) - score(a));
-    rec = { best: ranked[0], least: ranked[ranked.length - 1] };
-  }
   const stepRows = [];
   for (const fwId of (course && course.frameworks) || ['cjmm']) { const fw = SR.FRAMEWORKS[fwId]; if (!fw) continue; fw.steps.forEach(s => { const m = S.mastery[fw.id + ':' + s.id]; if (m && m.n) stepRows.push({ label: fw.short + ' · ' + s.label, v: m.s / m.n, title: m.n + ' items' }); }); }
 
   show(el('div', {}, SR.backRow('Insights'),
-    el('div', { class: 'card lift' }, el('div', { class: 'eyebrow' }, course ? course.name : ''), el('h2', {}, total < MIN_N ? 'Not enough data yet' : rec ? `Lean on ${NAMES[rec.best.m] || rec.best.m}.` : 'Early read'),
-      el('p', { class: 'lead' }, total < MIN_N ? `Answer about ${MIN_N - total} more items and this page starts comparing methods.` : rec ? `Across ${total} answered items, ${NAMES[rec.best.m] || rec.best.m} shows the best combination of improvement over time and retention of things you had missed. ${NAMES[rec.least.m] || rec.least.m} shows the least so far. Keep using both; the picture sharpens with every shift.` : `${total} items answered. Two methods need at least ${MIN_N} items each before they can be compared.`),
+    SR.adapt && course ? SR.adapt.insightsCard(course) : null,
+    el('div', { class: 'card', style: 'margin-top:16px' }, el('div', { class: 'eyebrow' }, course ? course.name : ''), el('h2', {}, total < MIN_N ? 'Not enough data yet' : 'Each method on its own terms'),
+      el('p', { class: 'lead' }, total < MIN_N ? `Answer about ${MIN_N - total} more items and these charts fill in.` : `${total} answered items. These charts measure each method on its own questions. That is useful for seeing what is getting easier, but a method can look strong here just because its questions are easier (flashcards you mark yourself always look good). The card above is the fairer test: it measures every method on the same exam-style items.`),
       el('p', { class: 'hint' }, 'How this is measured: accuracy (average score), improvement (last third of attempts vs first third), retention (how often an item you previously missed is right the next time), time per item, and your one-tap ratings after shifts. Small numbers wobble; trust trends over 50+ items.')),
     el('div', { class: 'grid2', style: 'margin-top:16px' },
       el('div', { class: 'card' }, el('h3', {}, 'Accuracy by method'), el('p', { class: 'hint' }, 'Average score per item.'), barList(st.map(b => ({ label: (NAMES[b.m] || b.m) + ' (' + b.n + ')', v: b.acc, title: b.n + ' items' })), pctF)),
