@@ -589,7 +589,7 @@ function quickFireRound(onDone, n = 3) {
   if (!qs.length) { toast('No quick-fire questions in this course yet.'); return onDone(0); }
   function nextQ() {
     if (i >= qs.length) return onDone(scores.reduce((a, b) => a + b, 0) / scores.length);
-    const q = qs[i]; const item = { type: q.multi ? 'sata' : 'single', step: q.step || (q.fw ? undefined : 'action'), hideStep: !!q.fw, prompt: q.q, options: q.options, rationale: q.rationale, n: q.multi ? q.options.filter(o => o.ok).length : undefined };
+    const q = qs[i]; const item = { type: q.multi ? 'sata' : 'single', step: q.step || (!q.fw && ((SR.courses.active() || {}).frameworks || ['cjmm']).includes('cjmm') ? 'action' : undefined), hideStep: !!q.fw, prompt: q.q, options: q.options, rationale: q.rationale, n: q.multi ? q.options.filter(o => o.ok).length : undefined };
     show(plain('Quick Fire', 'Question ' + (i + 1) + ' of ' + qs.length + ' · ' + (q.source || 'your course material'), questionCard({ item, framework: q.fw || 'cjmm', stepIndex: q.fw ? undefined : 4, key: 'qf:' + q.q.slice(0, 40), label: 'Quick fire: ' + q.q.slice(0, 60), nextLabel: i === qs.length - 1 ? 'Done' : 'Next', onDone: s => { scores.push(s); i++; nextQ(); } })));
   }
   nextQ();
