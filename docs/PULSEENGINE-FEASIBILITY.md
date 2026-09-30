@@ -24,6 +24,7 @@ Answers gathered after the first draft. Everything below is written against thes
 | Formal research / IRB | **No.** Product feedback only. |
 | Nursing-side quality check | **The pilot student**, who will be an RN by launch. Source material is the professor's own notes and packets. |
 | Terms and privacy policy | **Yes, boilerplate now.** See `docs/TERMS.md` and `docs/PRIVACY.md`. Lawyer review before launch. |
+| Adaptive delivery design | **Choice first, evidence over time.** Students pick preferred methods; every shift mixes several, weighted toward their picks; the mix moves gradually toward what measurably works; the student is told when the app finds something they did not expect. Section 10. |
 | Database | The Shift Ready Supabase project is `zenvotibmwyytvvcxjqx`. It is under a different Supabase account than the one connected to this session, so tables there will be created through the dashboard's SQL editor (as `docs/HOSTING.md` already describes) or after that account is connected. **No tables are being created now; this document is planning only.** |
 
 ### What "NotebookLM-style" commits you to
@@ -378,7 +379,7 @@ Rough effort, in working sessions rather than calendar time:
 | --- | --- | --- |
 | 0. Safe to open | 1 to 2 | Owner-scope the built-in pack, consent, spending cap, terms and privacy policy drafts |
 | 1. Events table | 1 | Small code change plus one migration |
-| 2. Modality routing | 1 to 2 | No new infrastructure |
+| 2. Choice-weighted mixing and the reveal | 2 to 3 | No new infrastructure; works on existing content (section 10) |
 | 3. Upload and extract | 3 to 4 | First Netlify Function, file parsing, storage |
 | 4. Generation and review screen | 4 to 6 | The prompt, the queue, the versioned payloads, and the review UI; then nursing-side quality checking |
 | 5. Per-item explanation | 1 | Reuses phase 4 plumbing |
@@ -391,11 +392,12 @@ consent checkbox to sign-up. Set the Anthropic spending cap. A day or two.
 Insert one row per answered item when signed in; keep the local array for offline.
 This is what makes the pilot produce data worth having. Also small.
 
-**Phase 2: modality routing (no API cost).**
-Use the telemetry already in `insights.js` to pick which study mode to open next. If
-flashcards are producing 85% retention and plain questions 40%, lead with flashcards.
-This is the spec's core promise, needs no LLM, and tells you whether adaptive routing
-actually helps before you spend money on generation.
+**Phase 2: choice-weighted mixing and the reveal (no API cost).**
+Students rank their preferred methods; shifts mix methods weighted toward those picks;
+the weights move slowly toward what measurably works; the student is told when the
+evidence is clear. Full design in section 10, "choice first, evidence over time." This
+is the spec's core promise, needs no AI, runs on the existing built-in content, and
+tells you whether adaptive delivery helps before you spend money on generation.
 
 **Phase 3: upload and extract.**
 File upload to Supabase Storage, a function that extracts text, the `documents` table,
@@ -527,6 +529,102 @@ That phrase points at the discredited version and any nursing educator who reads
 research will dismiss the product on sight. "Measures which practice formats actually
 stick for you, and schedules review when you are about to forget" is accurate, is
 defensible, and is what nobody else does.
+
+### The chosen design: choice first, evidence over time
+
+**Decision.** Students pick the study methods they prefer. The shift mode (the mixed,
+random session) always includes several methods, weighted toward their picks. The app
+tracks outcomes, shifts the mix gradually toward what works, and tells the student when
+it has found something they did not expect. The same principle was learned on Jette and
+is carried over here.
+
+This is better than the pure algorithmic version described above, for four reasons:
+
+1. **Preference is a reasonable starting point.** A new student has no data. The cohort
+   average is a guess about strangers; the student's own pick is a guess about
+   themselves. It is at least as good a prior, and it is free.
+2. **Choice keeps people studying.** Autonomy is one of the best-supported drivers of
+   motivation (the research area is self-determination theory). A method that works
+   slightly better but that the student resents does not get used. For an app whose
+   pilot users are volunteers, this matters more than a small efficiency gain.
+3. **The mix is the exploration.** An adaptive system has to keep trying the
+   non-favourite formats a little, or it can never learn that one of them works better.
+   Putting several methods into every shift does this naturally and does not feel like
+   an experiment to the student. It feels like variety, which also helps with ADHD.
+4. **The reveal is the product moment.** "You told us flashcards work best for you. You
+   are right about pharmacology. For prioritisation, the unfolding cases are what stuck:
+   you kept 81% a week later, versus 54% from flashcards." Nobody else can say that,
+   because nobody else measures it. It is also the most shareable thing the app will
+   produce, and the most convincing evidence for a paid tier.
+
+**The existing app already has half of this.** The Insights page shows both "What you
+said helped" (the one-tap rating after each shift) and measured accuracy, retention and
+improvement per method, side by side. What is missing is putting those two things in
+the same sentence, per topic, and letting the measured side move the mix.
+
+### How it works
+
+**1. Onboarding: choose.** In the course wizard, "How you study" becomes a ranking or a
+set of sliders rather than on/off checkboxes. The student's top picks start at most of
+the mix.
+
+**2. Every shift: mix, weighted.** The shift runner already builds a queue of mixed
+rounds (`runShift` in `app.js`). It draws rounds by weight instead of by fixed recipe.
+
+| Rule | Starting value | Why |
+| --- | --- | --- |
+| Preferred methods' share of a shift | ~70% | Respects the choice |
+| Every enabled method appears at least | ~10% | Keeps the measurement alive |
+| A method the student switched off | 0% | A choice is a choice; never force it back in |
+| The exam-format item (unfolding case) | Always present | It is the yardstick; see below |
+
+**3. Measure on a common yardstick.** For each topic, the question is: after practising
+with method X, how does the student do on that topic's case-style item a few days
+later? Not how they do on X itself. Flashcards always look good on flashcards.
+
+**4. Move incrementally.** Once the evidence is clear, the weights shift. Slowly:
+
+- at most about 10 percentage points per week per method;
+- the student's preferred method never falls below about 30% unless they change it;
+- a shift toward a method is reversed if its advantage disappears.
+
+Slow movement matters because early numbers are noisy, and because an app that suddenly
+stops serving what you picked feels broken, not smart.
+
+**5. The reveal, with guardrails.** The student is told only when the evidence clears a
+bar, and the message is always honest about both directions.
+
+| Situation | What the student sees |
+| --- | --- |
+| Not enough data yet | Nothing, or "still learning what works for you: 23 more items on this topic" |
+| Their preference is confirmed | "You were right: flashcards are what sticks for you on pharmacology." Confirmation is a result, and people like hearing it. |
+| Something else works better | "You prefer flashcards, but for prioritisation the cases stuck better: 81% a week later versus 54%. We'll mix in a few more cases. You can change this any time." |
+| Methods are tied | "Both work about equally for you here, so we'll keep using what you prefer." |
+
+Bars before any claim is made, per student and topic: at least ~15 delayed yardstick
+items after each of the two methods being compared, and a gap of at least ~10 points
+that has held across two consecutive weeks. Those numbers are starting guesses to be
+tuned on pilot data; the principle is that a claim the app later has to retract costs
+more trust than it gained.
+
+**6. The student stays in charge.** Every reveal comes with a choice: "use more of it,"
+"keep my mix," or "tell me more." If they keep their mix, the app keeps measuring and
+may say so again later with stronger evidence, but it does not nag. The Insights page
+shows the full picture any time.
+
+### What this changes elsewhere
+
+- **Events table (section 4):** each event also records the topic and whether it was a
+  delayed yardstick item, so the "a few days later" comparison is one query.
+- **Content (phase 4):** every topic needs one case-style item and at least two other
+  formats. The generation prompt already produces several formats per unit; this makes
+  it a requirement rather than a nice-to-have.
+- **Build order:** this replaces the plain "modality routing" of phase 2. The first
+  version needs no AI at all: weighted mixing and the preference-versus-measured
+  comparison work on the existing built-in content.
+- **Pilot readout:** across 200 students, "what share of students' preferred method was
+  also their most effective one" is a single number the pilot produces for free. Whatever
+  it turns out to be, it is the headline for the paid-tier pitch.
 
 ### Part 2: Tailoring to a professor's testing habits
 
