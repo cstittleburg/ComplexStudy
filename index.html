@@ -377,6 +377,10 @@ table.mixtable{width:100%;border-collapse:collapse;font-size:.9rem;margin-top:12
 table.mixtable th,table.mixtable td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
 table.mixtable th{font-size:.72rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-weight:600}
 table.mixtable td.num{font-family:var(--mono);font-size:.85rem}
+.list .tag{display:inline-block;font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);font-weight:700;border:1px solid var(--warn);border-radius:999px;padding:0 8px}
+.consent{display:flex;gap:10px;align-items:flex-start;margin-top:10px;font-size:.9rem;cursor:pointer}
+.consent input{margin-top:4px;width:18px;height:18px;flex:none}
+.legal h2{margin:18px 0 6px}.legal h3{margin:14px 0 4px}.legal h4{margin:10px 0 4px}.legal p{margin:8px 0}.legal ul,.legal ol{margin:6px 0}
 .cardback{white-space:pre-line;background:var(--accent-soft);border-left:4px solid var(--accent);padding:12px 14px;border-radius:0 var(--r-sm) var(--r-sm) 0;margin-top:4px}
 </style>
 </head>
@@ -398,7 +402,9 @@ table.mixtable td.num{font-family:var(--mono);font-size:.85rem}
 <div class="envbanner" id="envBanner" role="status" hidden></div>
 <main id="app"></main>
 <canvas id="confetti" hidden></canvas>
+<script src="content/registry.js"></script>
 <script src="content/frameworks.js"></script>
+<script src="content/general.js"></script>
 <script src="content/resp.js"></script>
 <script src="content/week1.js"></script>
 <script src="content/pools.js"></script>
@@ -409,6 +415,9 @@ table.mixtable td.num{font-family:var(--mono);font-size:.85rem}
 <script src="courses.js"></script>
 <script src="adapt.js"></script>
 <script src="insights.js"></script>
+<script src="legal.js"></script>
+<script src="debrief.js"></script>
+<script src="packs.js"></script>
 <script src="sync.js"></script>
 </body>
 </html>
