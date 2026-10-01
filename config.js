@@ -10,11 +10,13 @@
 (function () {
   const LIVE = {
     supabaseUrl: 'https://zenvotibmwyytvvcxjqx.supabase.co',
-    supabaseAnonKey: 'sb_publishable_z9lFJ_JkW_0zGpFN7ugysQ_JMrrrfgx'
+    supabaseAnonKey: 'sb_publishable_z9lFJ_JkW_0zGpFN7ugysQ_JMrrrfgx',
+    privatePacks: false   // true once the pilot opens: professor-derived packs load only for their owner (docs/PILOT-CUTOVER.md)
   };
   const PRACTICE = {
     supabaseUrl: '',      // e.g. 'https://xxxx.supabase.co' of a second, practice-only Supabase project
-    supabaseAnonKey: ''   // its publishable key (sb_publishable_...)
+    supabaseAnonKey: '',  // its publishable key (sb_publishable_...)
+    privatePacks: false
   };
   const host = location.hostname;
   const testCopy = location.protocol === 'file:' || host === '' || host === 'localhost' || host === '127.0.0.1' ||

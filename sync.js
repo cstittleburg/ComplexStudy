@@ -15,6 +15,15 @@ const practice = cfg.env === 'practice';
 let client = null, user = null, pushTimer = null, lastPushed = 0, libError = null, lastError = null;
 let eventsState = 'idle', eventsError = null;   // idle | ok | missing | error
 
+/* Other modules (packs, consent, exam debriefs) register here to run once someone is signed in:
+   SR.hooks.signedIn.push((client, user) => ...). */
+SR.hooks.signedIn = SR.hooks.signedIn || [];
+let announced = null;
+function announce() { if (!client || !user || announced === user.id) return; announced = user.id; for (const fn of SR.hooks.signedIn) { try { fn(client, user); } catch (e) { console.warn(e); } } }
+/* A table or function that has not been created yet (its migration not run): callers switch the feature off quietly. */
+const isMissing = error => !!error && /42P01|42883|PGRST20[25]|does not exist|could not find the (table|function)|schema cache/i.test((error.code || '') + ' ' + (error.message || ''));
+SR.account = { enabled, practice, isMissing, get user() { return user; }, get client() { return client; } };
+
 function showBanner() {
   const b = document.getElementById('envBanner'); if (!b || !practice) return;
   b.textContent = enabled ? 'Test copy: signed-in progress goes to the practice database, never the real one.' : 'Test copy: sign-in is off here, so nothing can touch real progress. Anything you do stays in this browser.';
@@ -29,8 +38,8 @@ async function init() {
   try { await loadLib(); } catch (e) { libError = 'The sign-in library could not be downloaded (blocked network or ad blocker?). Reload the page to try again.'; console.warn('Supabase library failed to load; staying local.'); return; }
   client = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
   try { const { data } = await client.auth.getSession(); user = data.session ? data.session.user : null; } catch (e) { lastError = String(e.message || e); }
-  client.auth.onAuthStateChange((_evt, session) => { user = session ? session.user : null; if (user) pull(); });
-  if (user) pull();
+  client.auth.onAuthStateChange((_evt, session) => { user = session ? session.user : null; if (user) { pull(); announce(); } else announced = null; });
+  if (user) { pull(); announce(); }
 }
 async function pull() {
   if (!client || !user) return;
@@ -69,8 +78,7 @@ async function pushEvents() {
       const chunk = todo.slice(i, i + 500);
       const { error } = await client.from('events').upsert(chunk.map(eventRow), { onConflict: 'user_id,cid', ignoreDuplicates: true });
       if (error) {
-        const msg = (error.code || '') + ' ' + (error.message || '');
-        if (/42P01|PGRST205|does not exist|could not find the table|schema cache/i.test(msg)) eventsState = 'missing'; else { eventsState = 'error'; eventsError = error.message; }
+        if (isMissing(error)) eventsState = 'missing'; else { eventsState = 'error'; eventsError = error.message; }
         return;
       }
       st.evSync = { uid: user.id, t: chunk[chunk.length - 1].t };   // saved with the next save; re-sending is harmless
@@ -86,6 +94,7 @@ SR.hooks.settingsPanel = function () {
     card.append(el('p', { class: 'hint' }, practice
       ? 'This is a test copy (a preview link or a local file), so sign-in is switched off: it can never touch anyone\'s real progress. Everything you do here stays in this browser. To test sign-in, add a practice database in config.js (see docs/HOSTING.md).'
       : 'Sign-in is not configured on this copy. Progress stays in this browser. See docs/HOSTING.md to turn on accounts.'));
+    if (SR.legal) card.append(el('p', { class: 'hint', style: 'margin-top:10px' }, SR.legal.link('terms', 'Terms of Service'), ' · ', SR.legal.link('privacy', 'Privacy Policy')));
     return card;
   }
   if (practice) card.append(el('p', { class: 'hint' }, 'Test copy: this signs in to the practice database, not the real one.'));
@@ -95,8 +104,10 @@ SR.hooks.settingsPanel = function () {
   } else {
     const email = el('input', { type: 'email', placeholder: 'you@example.com', style: 'flex:1;min-width:200px' });
     const status = el('p', { class: 'hint', style: 'margin-top:8px' });
-    card.append(el('p', {}, el('strong', {}, 'No password.'), ' Enter your email and we send a one-time sign-in link. Click it on this same device and you are in.'), el('div', { class: 'row', style: 'margin-top:8px' }, email, el('button', { class: 'btn sm primary', type: 'button', onclick: async () => { if (!email.value) return toast('Enter your email'); status.textContent = 'Sending…'; try { const { error } = await client.auth.signInWithOtp({ email: email.value.trim(), options: { emailRedirectTo: location.origin + location.pathname } }); if (error) { lastError = error.message; status.textContent = 'Could not send the link: ' + error.message; } else status.textContent = 'Link sent to ' + email.value.trim() + '. Open the email on this device and click the link (check spam). The link expires in about an hour.'; } catch (e) { lastError = String(e.message || e); status.textContent = 'Sign-in failed: ' + lastError; } } }, 'Send sign-in link')), status);
+    const consent = SR.legal ? SR.legal.checkbox() : { el: null, ok: () => true };
+    card.append(el('p', {}, el('strong', {}, 'No password.'), ' Enter your email and we send a one-time sign-in link. Click it on this same device and you are in.'), el('div', { class: 'row', style: 'margin-top:8px' }, email, el('button', { class: 'btn sm primary', type: 'button', onclick: async () => { if (!email.value) return toast('Enter your email'); if (!consent.ok()) { status.textContent = 'Please tick the box to agree to the Terms and Privacy Policy first.'; return; } status.textContent = 'Sending…'; try { const { error } = await client.auth.signInWithOtp({ email: email.value.trim(), options: { emailRedirectTo: location.origin + location.pathname } }); if (error) { lastError = error.message; status.textContent = 'Could not send the link: ' + error.message; } else status.textContent = 'Link sent to ' + email.value.trim() + '. Open the email on this device and click the link (check spam). The link expires in about an hour.'; } catch (e) { lastError = String(e.message || e); status.textContent = 'Sign-in failed: ' + lastError; } } }, 'Send sign-in link')), consent.el, status);
   }
+  if (SR.legal) card.append(el('p', { class: 'hint', style: 'margin-top:10px' }, SR.legal.link('terms', 'Terms of Service'), ' · ', SR.legal.link('privacy', 'Privacy Policy')));
   const evNote = eventsState === 'ok' ? 'answered items: uploaded' : eventsState === 'missing' ? 'answered items: not uploaded (the events table has not been created yet)' : eventsState === 'error' ? 'answered items: upload failed (' + eventsError + ')' : 'answered items: waiting';
   card.append(el('details', { style: 'margin-top:10px' }, el('summary', { class: 'hint' }, 'Connection details'), el('p', { class: 'hint mono', style: 'font-size:.75rem' }, 'Database: ' + (practice ? 'practice' : 'live') + ' · project: ' + cfg.supabaseUrl + ' · key: ' + (cfg.supabaseAnonKey || '').slice(0, 18) + '… · library: ' + (window.supabase ? 'loaded' : 'not loaded') + ' · session: ' + (user ? user.email : 'none') + ' · ' + evNote + (lastError ? ' · last error: ' + lastError : ''))));
   return card;

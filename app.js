@@ -32,9 +32,37 @@ const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 
 /* ---------------- persistent state ---------------- */
 const KEY = 'shift-ready-v1';
-const DEFAULT = { xp: 0, streak: { last: null, count: 0 }, shifts: 0, answered: 0, perfect: 0, mastery: {}, muddy: {}, badges: [], settings: { sound: false, theme: 'system', timerMin: 10 }, seen: {}, courses: {}, activeCourse: null, events: [], ratings: [], updatedAt: 0 };
-let S = load();
+const DEFAULT = { xp: 0, streak: { last: null, count: 0 }, shifts: 0, answered: 0, perfect: 0, mastery: {}, muddy: {}, badges: [], settings: { sound: false, theme: 'system', timerMin: 10 }, seen: {}, courses: {}, activeCourse: null, events: [], ratings: [], review: {}, updatedAt: 0 };
+const REVIEW_DAYS = [1, 3, 7, 14, 30];   // spaced-review gaps, in days (see schedule below)
+let S = migrate(load());
 function load() { try { const raw = localStorage.getItem(KEY); if (raw) return Object.assign({}, DEFAULT, JSON.parse(raw)); } catch (e) { } return JSON.parse(JSON.stringify(DEFAULT)); }
+/* Spaced review: every missed item is scheduled to come back after 1 day; each time it is then answered right
+   (when due), the gap grows to 3, 7, 14 and 30 days, after which it has "graduated". A miss starts it over.
+   Items already on the Muddy points list from before this existed are scheduled for tomorrow. */
+function migrate(st) {
+  st.review = st.review || {};
+  for (const [k, m] of Object.entries(st.muddy || {})) if (!st.review[k]) {
+    const last = (st.events || []).slice().reverse().find(e => e.k === k);
+    st.review[k] = { box: 0, due: (m.last || Date.now()) + REVIEW_DAYS[0] * 864e5, label: m.label, c: last ? last.c : st.activeCourse };
+  }
+  return st;
+}
+function schedule(key, label, score) {
+  if (!key) return; const r = S.review[key]; const now = Date.now();
+  if (score < 1) S.review[key] = { box: 0, due: now + REVIEW_DAYS[0] * 864e5, label, c: S.activeCourse };
+  else if (r && now >= r.due - 12 * 36e5) { if (r.box + 1 >= REVIEW_DAYS.length) delete S.review[key]; else { r.box++; r.due = now + REVIEW_DAYS[r.box] * 864e5; } }
+}
+const isDue = key => { const r = key && S.review[key]; return !!r && r.due <= Date.now(); };
+function dueCount(courseId) { const now = Date.now(); return Object.values(S.review).filter(r => r.due <= now && (!courseId || r.c === courseId)).length; }
+/* Weighted picks: items from the heaviest topics of the student's exam debriefs come up more often (debrief.js). */
+const lean = (x, kind) => (SR.debrief ? SR.debrief.weight(x, kind) : 1);
+function wsample(arr, n, w) { return arr.map(x => ({ x, k: Math.pow(Math.random(), 1 / Math.max(1e-6, w(x))) })).sort((a, b) => b.k - a.k).slice(0, n).map(o => o.x); }
+/* Up to half the picks are items due for review, the rest weighted by the exam profile. */
+function pickWithDue(arr, n, keyFn, kind) {
+  const due = shuffle(arr.filter(x => isDue(keyFn(x)))).slice(0, Math.ceil(n / 2));
+  return shuffle(due.concat(wsample(arr.filter(x => !due.includes(x)), n - due.length, x => lean(x, kind))));
+}
+const preferDue = (arr, keyFn, kind, p = 0.7) => { const due = arr.filter(x => keyFn(x).some(isDue)); return due.length && Math.random() < p ? pick(due) : wsample(arr, 1, x => lean(x, kind))[0]; };
 function save() { S.updatedAt = Date.now(); try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } if (window.SR && SR.hooks.onSave) SR.hooks.onSave(S); }
 function applyTheme() { const t = S.settings.theme; if (t === 'system') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t); }
 applyTheme();
@@ -95,6 +123,7 @@ function record({ framework = 'cjmm', step, score, key, label, ms, selfRated }) 
     const mk = framework + ':' + step; const m = S.mastery[mk] || { n: 0, s: 0 };
     m.n++; m.s += score; S.mastery[mk] = m;
   }
+  schedule(key, label, score);
   if (key) {
     if (score < 1) { const mm = S.muddy[key] || { count: 0, label }; mm.count++; mm.label = label; mm.last = Date.now(); S.muddy[key] = mm; }
     else if (S.muddy[key]) { S.muddy[key].count = Math.max(0, S.muddy[key].count - 1); if (S.muddy[key].count === 0) delete S.muddy[key]; }
@@ -425,13 +454,15 @@ function homeView() {
   const greet = S.shifts === 0 ? 'Welcome to your first shift.' : `Shift ${S.shifts + 1}. ${pick(['Notice the change.', 'Name the threat.', 'Act, then reassess.', 'Map it, don\'t memorize it.'])}`;
   const canShift = Modes[0].available(content);
   const rhyme = content.rhymes.length ? pick(content.rhymes).back.split('\n')[0] : (fw.mnemonic || '');
-  const adaptCards = SR.adapt ? SR.adapt.homeCards(course) : [];
+  const adaptCards = [SR.legal ? SR.legal.homeCard() : null, ...(SR.adapt ? SR.adapt.homeCards(course) : [])];
+  const dueN = dueCount(course.id);
   show(el('div', {},
     el('div', { class: 'hero' },
       el('div', { class: 'card lift' }, el('div', { class: 'row spread' }, el('div', { class: 'eyebrow' }, course.name), el('button', { class: 'btn sm ghost', type: 'button', onclick: () => SR.courses.picker() }, 'Switch course')),
         content.focus ? el('div', { class: 'row', style: 'margin-top:6px' }, el('span', { class: 'stat' }, '🎯 Focus: ' + content.focus.join(', ')), el('button', { class: 'btn sm ghost', type: 'button', onclick: () => SR.courses.settings() }, 'change')) : null, el('h1', {}, greet), el('p', { class: 'lead' }, course.blurb || 'Short practice sessions built from your course material. One shift takes about twelve minutes. Then take a break; you earned it.'),
         el('div', { class: 'row', style: 'margin-top:16px' }, canShift ? el('button', { class: 'btn primary', type: 'button', onclick: () => Modes[0].start() }, '▶ Start a shift') : el('button', { class: 'btn primary', type: 'button', onclick: () => SR.courses.settings() }, '＋ Add content'), content.cases.length ? el('button', { class: 'btn', type: 'button', onclick: () => caseListView() }, 'Pick a case') : null, muddyN ? el('button', { class: 'btn', type: 'button', onclick: () => muddyView() }, `Muddy points (${muddyN})`) : null, el('button', { class: 'btn', type: 'button', onclick: () => SR.insights.view() }, 'Insights')),
         canShift && SR.adapt ? SR.adapt.mixLine(course) : null,
+        dueN ? el('p', { class: 'hint', style: 'margin:8px 0 0' }, dueN + (dueN === 1 ? ' missed item is' : ' missed items are') + ' due for review. Shifts and practice rounds bring them back first.') : null,
         rhyme ? el('div', { class: 'rhymebox' }, '“' + rhyme + '”') : null),
       el('div', { class: 'card' }, el('div', { class: 'eyebrow' }, 'Your map of the model · ' + fw.short), el('p', { class: 'hint', style: 'margin:4px 0 10px' }, 'Tap a step for its rhyme. Bars fill as you get items right.'), mastery,
         el('div', { class: 'scoreline', style: 'margin-top:14px' }, el('div', { class: 's' }, el('div', { class: 'b' }, S.shifts), el('div', { class: 'l' }, 'shifts')), el('div', { class: 's' }, el('div', { class: 'b' }, S.answered), el('div', { class: 'l' }, 'items')), el('div', { class: 's' }, el('div', { class: 'b' }, S.answered ? Math.round(100 * S.perfect / S.answered) + '%' : '—'), el('div', { class: 'l' }, 'perfect'))))),
@@ -500,7 +531,7 @@ const LET = ['A', 'B', 'C', 'D'];
 function whoFirstRound(onDone) {
   setMode('whofirst');
   const POOL = SR.content().whofirst; const t0 = Date.now();
-  const urgent = pick(POOL.filter(x => x.tier === 1)); setArea(areaOf(urgent, 'whofirst'));
+  const urgent = preferDue(POOL.filter(x => x.tier === 1), x => ['wf:' + x.t.slice(0, 40), 'wfc:' + x.t.slice(0, 40)], 'whofirst'); setArea(areaOf(urgent, 'whofirst'));
   const others = sample(POOL.filter(x => x.tier !== 1), 3);
   const cards = shuffle([urgent, ...others]);
   let sel = null; let phase = 1; let s1 = 0;
@@ -527,7 +558,7 @@ function whoFirstRound(onDone) {
 
 function delegationRound(onDone) {
   setMode('delegation');
-  const d = pick(SR.content().delegation); setArea(areaOf(d, 'delegation'));
+  const d = preferDue(SR.content().delegation, x => ['del:' + x.rn.slice(0, 40)], 'delegation'); setArea(areaOf(d, 'delegation'));
   const item = { type: 'single', step: 'now', prompt: 'The RN is working with an unlicensed assistive person. Which of these must the RN address personally?', options: [{ t: d.rn, ok: true, why: d.why }, ...sample(d.others, 3).map(t => ({ t, ok: false, why: 'Stable client, routine task: can be delegated.' }))], rationale: 'Delegation is prioritization of nursing judgment. Assessment, teaching, evaluation, and unstable clients stay with the RN. “Assess, Teach, Evaluate, Unstable: stays on the RN’s table.”' };
   show(plain('What stays with the RN?', 'Delegation', questionCard({ item, framework: 'lens', stepIndex: 4, key: 'del:' + d.rn.slice(0, 40), label: 'Delegation: ' + d.rn.slice(0, 60), nextLabel: 'Done', onDone })));
 }
@@ -547,7 +578,7 @@ function genTrend(tpl) {
 }
 function trendRound(onDone) {
   setMode('trend');
-  const TT = SR.content().trends; const tpl = pick(TT); const rows = genTrend(tpl); setArea(areaOf(tpl, 'trend'));
+  const TT = SR.content().trends; const tpl = preferDue(TT, x => ['trend:' + x.id, 'trend2:' + x.id], 'trend', 0.6); const rows = genTrend(tpl); setArea(areaOf(tpl, 'trend'));
   const item = { type: 'trend', step: 'evaluate', prompt: tpl.title + '. For each finding, is the client improving, declining, or unchanged?', rows, rationale: 'Compare each value to the previous one, not to the normal range. Then read all the rows together: they tell one story.' };
   let s1 = 0;
   const q2 = () => {
@@ -559,7 +590,8 @@ function trendRound(onDone) {
 }
 
 function genABG() {
-  const d = pick(ABG.disorders); const comp = pick(['none', 'partial', 'full']);
+  const due = ABG.disorders.filter(x => [0, 1, 2, 3].some(i => isDue('abg:' + x.id + ':' + i)));
+  const d = due.length && Math.random() < 0.6 ? pick(due) : pick(ABG.disorders); const comp = pick(['none', 'partial', 'full']);
   const r = (a, b, dec = 0) => +(a + Math.random() * (b - a)).toFixed(dec);
   let pH, co2, hco3;
   if (d.id === 'ra') { co2 = r(50, 68); if (comp === 'none') { hco3 = r(22, 26); pH = r(7.20, 7.32, 2); } else if (comp === 'partial') { hco3 = r(27, 32); pH = r(7.26, 7.34, 2); } else { hco3 = r(30, 36); pH = r(7.35, 7.39, 2); } }
@@ -594,7 +626,7 @@ function abgRound(onDone) {
 
 function quickFireRound(onDone, n = 3) {
   setMode('quickfire');
-  const qs = sample(SR.content().quickfire, n); const scores = []; let i = 0;
+  const qs = pickWithDue(SR.content().quickfire, n, q => 'qf:' + q.q.slice(0, 40), 'quickfire'); const scores = []; let i = 0;
   if (!qs.length) { toast('No quick-fire questions in this course yet.'); return onDone(0); }
   function nextQ() {
     if (i >= qs.length) return onDone(scores.reduce((a, b) => a + b, 0) / scores.length);
@@ -620,7 +652,7 @@ function ratesRound(onDone, n = 3) {
   setMode('rates'); setArea('epi'); const scores = []; let i = 0;
   function nextQ() {
     if (i >= n) return onDone(scores.reduce((a, b) => a + b, 0) / scores.length);
-    const t = pick(RATE_TYPES); const d = t.gen(); const per = pick(t.per); const correct = t.num(d) / t.den(d) * per;
+    const dueT = RATE_TYPES.filter(x => isDue('rate:' + x.id)); const t = dueT.length && Math.random() < 0.5 ? pick(dueT) : pick(RATE_TYPES); const d = t.gen(); const per = pick(t.per); const correct = t.num(d) / t.den(d) * per;
     const opts = [{ t: fmtRate(correct, per, t.unit), ok: true, why: t.formula }];
     const seen = new Set([opts[0].t]);
     for (const w of t.wrong(d, per)) { const label = fmtRate(w, per, t.unit); if (!seen.has(label)) { seen.add(label); opts.push({ t: label, ok: false, why: 'A common wrong denominator or multiplier.' }); } }
@@ -665,8 +697,9 @@ function cardsRound(onDone, n = 5, pool) {
   const R = pool || SR.content().rhymes;
   if (!R.length) { toast('No flashcards in this course yet.'); return onDone(0); }
   const keyOf = r => 'card:' + r.front.slice(0, 40);
-  const missed = R.filter(r => S.muddy[keyOf(r)]);
-  const deck = shuffle(missed).concat(shuffle(R.filter(r => !S.muddy[keyOf(r)]))).slice(0, n);
+  const due = R.filter(r => isDue(keyOf(r))), missed = R.filter(r => !isDue(keyOf(r)) && S.muddy[keyOf(r)]);
+  const rest = R.filter(r => !due.includes(r) && !missed.includes(r));
+  const deck = shuffle(due).concat(shuffle(missed), wsample(rest, n, x => lean(x, 'rhyme'))).slice(0, n);
   const scores = []; let i = 0;
   function nextCard() {
     if (i >= deck.length) return onDone(scores.reduce((a, b) => a + b, 0) / scores.length);
@@ -689,7 +722,9 @@ function muddyView() {
   const caseIds = [...new Set(entries.map(([k]) => k.split('#')[0]).filter(id => CASES.some(c => c.id === id)))];
   const replay = el('div', { class: 'row', style: 'margin-top:14px' });
   caseIds.forEach(id => { const c = CASES.find(x => x.id === id); replay.append(el('button', { class: 'btn sm', type: 'button', onclick: () => runCase(c) }, 'Replay: ' + c.title)); });
-  show(el('div', {}, backRow('Muddy points', el('button', { class: 'btn sm ghost', type: 'button', onclick: () => { if (confirm('Clear the muddy points list?')) { S.muddy = {}; save(); muddyView(); } } }, 'Clear')), el('div', { class: 'card' }, entries.length ? [el('p', {}, 'Items you have missed. Each one you get right afterwards drops off the list. Replaying a case draws a new patient with the same clinical story.'), ul, replay] : el('p', {}, 'Nothing muddy yet. Everything you miss lands here so you can go back to it.'))));
+  const dueHere = dueCount(S.activeCourse); const waiting = Object.values(S.review).filter(r => r.c === S.activeCourse).length;
+  entries.forEach(([k], i) => { if (isDue(k)) ul.children[i].append(' ', el('span', { class: 'tag' }, 'due for review')); });
+  show(el('div', {}, backRow('Muddy points', el('button', { class: 'btn sm ghost', type: 'button', onclick: () => { if (confirm('Clear the muddy points list?')) { S.muddy = {}; save(); muddyView(); } } }, 'Clear')), el('div', { class: 'card' }, entries.length || waiting ? [el('p', {}, 'Items you have missed. Each one you get right afterwards drops off the list. Replaying a case draws a new patient with the same clinical story.'), waiting ? el('p', { class: 'hint' }, 'Spaced review: ' + waiting + ' missed item' + (waiting === 1 ? '' : 's') + ' will come back at growing gaps (1, 3, 7, 14 and 30 days) until you have them. ' + (dueHere ? dueHere + ' ' + (dueHere === 1 ? 'is' : 'are') + ' due now; shifts and practice rounds bring them back first.' : 'None are due right now.')) : null, ul, replay] : el('p', {}, 'Nothing muddy yet. Everything you miss lands here so you can go back to it.'))));
 }
 
 /* ---------------- settings ---------------- */
@@ -729,6 +764,7 @@ const Modes = [
   { id: 'rates', method: 'rates', name: 'Rate Drill', tag: 'Epidemiology', d: 'Incidence, prevalence, mortality, case fatality, infant mortality, birth and attack rates. New numbers every time.', start() { ratesRound(() => homeView(), 4); } },
   { id: 'quickfire', method: 'questions', name: 'Quick Fire', tag: c => c.quickfire.length + ' questions', d: 'Five fast questions. Assess before you act.', available: c => c.quickfire.length > 0, emptyMsg: 'Add practice questions in course settings.', start() { quickFireRound(() => homeView(), SR.content().quickfire.length >= 40 ? 8 : 5); } },
   { id: 'rhymes', method: 'flashcards', name: 'Rhyme & Reason', tag: c => c.rhymes.length + ' cards', d: 'Flashcards, mnemonics, rhymes and heuristics. Flip, or quiz yourself.', available: c => c.rhymes.length > 0, emptyMsg: 'Add flashcards in course settings.', start: rhymesView },
+  { id: 'debrief', name: 'Exam debrief', tag: 'After an exam', d: 'Describe an exam you just took, in your own words. Your practice then leans toward its format and topics.', start() { SR.debrief ? SR.debrief.listView() : toast('Not available on this copy.'); } },
   { id: 'muddy', name: 'Muddy points', tag: 'Review', d: 'Everything you have missed, ready to replay.', start: muddyView },
   { id: 'insights', name: 'Insights', tag: 'What works', d: 'Which study methods are paying off, with real numbers.', start() { SR.insights.view(); } }
 ];
@@ -754,7 +790,9 @@ function runShift() {
   const anchors = [];
   if (plan.ym === 'case') {
     const leastSeen = content.cases.slice().sort((a, b) => (S.seen[a.id] || 0) - (S.seen[b.id] || 0));
-    sample(leastSeen.slice(0, Math.max(3, Math.ceil(content.cases.length / 3))), plan.anchors).forEach(c => anchors.push({ name: c.title, mode: 'case', run: d => runCase(c, { onDone: d, onQuit: homeView }) }));
+    const dueCases = shuffle(content.cases.filter(c => Object.keys(S.review).some(k => k.startsWith(c.id + '#') && isDue(k)))).slice(0, plan.anchors);
+    const pool = leastSeen.slice(0, Math.max(3, Math.ceil(content.cases.length / 3))).filter(c => !dueCases.includes(c));
+    dueCases.concat(wsample(pool, plan.anchors - dueCases.length, x => lean(x, 'case'))).forEach(c => anchors.push({ name: c.title, mode: 'case', run: d => runCase(c, { onDone: d, onQuit: homeView }) }));
   } else if (plan.ym === 'quickfire') anchors.push({ name: 'Question set', mode: 'quickfire', run: d => quickFireRound(d, 6) });
   if (!anchors.length && !quick.length) { toast('This course needs cases, questions or flashcards before a shift can start.'); return homeView(); }
   // a quick round to warm up, then the anchor, then the rest; a second case goes about halfway through the rest
@@ -790,13 +828,13 @@ function runQueue(queue) {
 /* ---------------- public API for the other modules ---------------- */
 window.SR = {
   el, show, toast, shuffle, sample, pick, rand, fill, makePatient, esc,
-  state: () => S, save, record, setMode, setArea, questionCard, backRow, plain, chartPanel, runCase, runShift, cardsRound, homeView, settingsView, caseListView,
+  state: () => S, save, record, isDue, dueCount, setMode, setArea, questionCard, backRow, plain, chartPanel, runCase, runShift, cardsRound, homeView, settingsView, caseListView,
   ItemTypes, Modes, BADGES, FRAMEWORKS, masteryPct,
   hooks: {},            // onSave(state) — set by sync.js
   courses: null,        // set by courses.js
   insights: null,       // set by insights.js
   content: () => (SR.courses ? SR.courses.content() : { cases: CASES, whofirst: WHO_FIRST, trends: TREND_TEMPLATES, quickfire: QUICKFIRE, rhymes: RHYMES, delegation: DELEGATION }),
-  replaceState(next) { S = Object.assign({}, DEFAULT, next); save(); updateHeader(); applyTheme(); homeView(); }
+  replaceState(next) { S = migrate(Object.assign({}, DEFAULT, next)); save(); updateHeader(); applyTheme(); homeView(); }
 };
 
 /* ---------------- boot ---------------- */

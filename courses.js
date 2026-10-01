@@ -56,7 +56,10 @@ const METHODS = [
 
 function all() {
   const c = S().courses;
+  const privatePacks = SR.packs && SR.packs.private;
   for (const [id, def] of Object.entries(BUILTINS)) {
+    // With private packs, a built-in course appears only for the student whose pack for it has loaded.
+    if (!c[id] && privatePacks && !SR.packs.courses.has(id)) continue;
     if (!c[id]) { c[id] = JSON.parse(JSON.stringify(def)); continue; }
     // merge any materials or methods added to the built-in pack since this browser first stored the course
     const have = new Set((c[id].materials || []).map(m => m.name));
@@ -168,6 +171,7 @@ function settings() {
     el('div', { class: 'row spread' }, el('div', {}, el('div', { class: 'eyebrow' }, c.term || ''), el('h2', {}, c.name)), el('div', { class: 'row' }, el('button', { class: 'btn sm', type: 'button', onclick: () => wizard(c) }, 'Edit course'), !c.builtin ? el('button', { class: 'btn sm ghost', type: 'button', onclick: () => { if (confirm('Delete this course and its custom cards and questions? Progress events are kept.')) { delete all()[c.id]; S().activeCourse = BUILTIN_ID; SR.save(); picker(); } } }, 'Delete') : null)),
     el('div', { class: 'scoreline', style: 'margin-top:14px' }, el('div', { class: 's' }, el('div', { class: 'b' }, cnt.cases.length), el('div', { class: 'l' }, 'cases')), el('div', { class: 's' }, el('div', { class: 'b' }, cnt.whofirst.length), el('div', { class: 'l' }, 'priority cards')), el('div', { class: 's' }, el('div', { class: 'b' }, cnt.trends.length), el('div', { class: 'l' }, 'trend templates')), el('div', { class: 's' }, el('div', { class: 'b' }, cnt.quickfire.length), el('div', { class: 'l' }, 'questions')), el('div', { class: 's' }, el('div', { class: 'b' }, cnt.rhymes.length), el('div', { class: 'l' }, 'flashcards'))),
     SR.adapt ? el('div', {}, el('h3', { style: 'margin-top:18px' }, 'How you like to study'), SR.adapt.settingsPanel(c, settings), el('div', { class: 'row', style: 'margin-top:8px' }, el('button', { class: 'btn sm', type: 'button', onclick: () => SR.insights.view() }, 'See what actually works for you'))) : null,
+    SR.debrief ? el('div', {}, el('h3', { style: 'margin-top:18px' }, 'Exams'), SR.debrief.panel(c, settings)) : null,
     el('h3', { style: 'margin-top:18px' }, 'Focus'),
     el('p', { class: 'hint' }, 'Limit practice to items built from particular material. Untick everything to use all of it. Framework and heuristic cards always stay in.'),
     focusPanel(c),
@@ -241,7 +245,7 @@ function sourceSelect(c) { return el('select', {}, el('option', { value: '' }, '
 function boot() {
   const st = S(); all();
   if (st.customFrameworks) Object.assign(SR.FRAMEWORKS, st.customFrameworks);
-  if (!st.activeCourse || !st.courses[st.activeCourse]) { st.activeCourse = BUILTIN_ID; }
+  if (!st.activeCourse || !st.courses[st.activeCourse]) { st.activeCourse = st.courses[BUILTIN_ID] ? BUILTIN_ID : (Object.keys(st.courses)[0] || null); }
   picker();
 }
 

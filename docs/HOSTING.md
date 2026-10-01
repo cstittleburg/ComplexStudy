@@ -54,6 +54,11 @@ the item (never its text). It is what lets you look at study patterns across stu
 nothing existing changes, and the current live app never touches it, so it is safe to run on the live database
 whenever you are ready. Until it exists, the new app notices, stops trying to upload, and carries on normally.
 
+## Pilot tables (`0003` to `0005`)
+
+`0003_private_packs.sql`, `0004_consents.sql` and `0005_exam_debriefs.sql` are for the multi-student pilot. Like
+`0002`, they only add tables, so they are safe to run any time. `docs/PILOT-CUTOVER.md` lists the whole cutover.
+
 ## How sync behaves
 
 - Signed out: everything is saved in the browser, exactly as before.

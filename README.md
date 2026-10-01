@@ -42,6 +42,17 @@ row), it tells you, whether that confirms your favourite or surprises you, and t
 most 10 points a week. "Keep my mix" always wins. All of this runs in the browser from the event log; the rules
 live at the top of `adapt.js`.
 
+## Exam debriefs and spaced review
+
+After an exam, "Exam debrief" asks for a two-minute description in the student's own words: roughly how long, which
+kinds of questions, which topics felt heaviest, and private notes. Questions, cards and cases from the heavy topics
+then come up about twice as often, and Quick Fire leans toward the formats the exams used. The notes box refuses
+anything that reads like a reproduced exam question. Sharing a debrief with classmates is optional, contains no
+notes, waits a week after the exam, and shows nothing until five students have shared.
+
+Every missed item comes back on a schedule: after 1 day, then 3, 7, 14 and 30 days each time it is answered right.
+Shifts and practice rounds bring due items back first.
+
 ## Focus
 
 In course settings, tick one or more materials (for example the Exam 1 study guide) and every mode limits
@@ -63,11 +74,18 @@ app.js                the engine (item types, modes, scoring, chart panel, event
 courses.js            course picker, setup wizard, course settings, flashcard/question editors
 insights.js           the Insights page (method effectiveness)
 adapt.js              the adaptive mix: favourites, topic areas, the what-works comparison, shift planning
+debrief.js            exam debriefs: the form, the screening of notes, the exam profile, optional sharing
+legal.js              terms and privacy pages inside the app, and the consent tick box at sign-in
+packs.js              private packs: loads professor-derived packs from the database for their owner only (pilot)
 sync.js               optional accounts + cloud sync (Supabase), and the upload of answered items
 config.js             database keys: the live one for the live site, a practice one for test copies
 netlify.toml          Netlify static-site config
-supabase/migrations/  SQL: 0001 the progress table, 0002 the events table (one row per answered item)
+supabase/migrations/  SQL: 0001 progress, 0002 events, 0003 private packs, 0004 consents, 0005 exam debriefs
+tools/export-private-packs.mjs   turns the course packs into SQL for one account (pilot cutover)
+docs/PILOT-CUTOVER.md the one-time steps before other students sign in
 docs/HOSTING.md       Netlify + Supabase setup steps
+content/registry.js   empty content lists, loaded first
+content/general.js    general material every student gets: ABG data, the model cards, physiology trend templates
 content/frameworks.js thinking models (CJMM, Priority Lens, A-to-I survey, SBAR) — add new frameworks here
 content/resp.js       respiratory cases
 content/neuro.js      neuro cases

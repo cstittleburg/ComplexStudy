@@ -51,17 +51,17 @@ const avg = a => a.reduce((x, y) => x + y, 0) / a.length;
 const AREAS = [
   ['resp', 'respiratory', /\bresp\b|respirat|asthma|copd|pneumon|\bards\b|pulmon|\btb\b|tubercul|airway|bronch|inhal|breath|dyspn/i],
   ['neuro', 'neuro', /neuro|stroke|seiz|intracranial|\bicp\b|brain|spinal|dysreflexia|head inj|case study 2|cushing|glasgow/i],
-  ['fluids', 'fluids, burns and electrolytes', /fluid|burn|tbsa|sodium|potassium|calcium|magnes|phosph|electrolyte|overload|\bdka\b|diure/i],
-  ['shock', 'shock and sepsis', /shock|sepsis|septic|hemorrhag|hypovol|trauma|perfusion|bleed/i],
+  ['fluids', 'fluids & electrolytes', /fluid|burn|tbsa|sodium|potassium|calcium|magnes|phosph|electrolyte|overload|\bdka\b|diure/i],
+  ['shock', 'shock & sepsis', /shock|sepsis|septic|hemorrhag|hypovol|trauma|perfusion|bleed/i],
   ['acidbase', 'acid-base', /acid|\babg|alkal/i],
   ['priority', 'prioritization', /priorit|delegat|clinical judg|the model/i],
   ['prevention', 'levels of prevention', /prevent|screening/i],
-  ['infection', 'infection and immunity', /infect|transmission|immun|vaccin|outbreak/i],
+  ['infection', 'infection & immunity', /infect|transmission|immun|vaccin|outbreak/i],
   ['epi', 'epidemiology', /epidem|incidence|prevalence|mortality|\brates\b|denominator|causal|natural history|disease pattern|study design|triangle/i],
   ['culture', 'culture', /cultur/i],
   ['family', 'families', /famil/i],
   ['vulnerable', 'vulnerable populations', /vulnerab|homeless|poverty/i],
-  ['community', 'community and public health', /communit|public health|core function|essential service|practice setting|program plan|planning process|smart objective|aggregate|population|nurse roles/i],
+  ['community', 'community & public health', /communit|public health|core function|essential service|practice setting|program plan|planning process|smart objective|aggregate|population|nurse roles/i],
   ['lifespan', 'lifespan', /lifespan|pediatric|older adult|infant|child|pregnan|geriatric/i]
 ];
 const AREA_NAME = Object.fromEntries(AREAS.map(a => [a[0], a[1]]));
@@ -457,5 +457,6 @@ function insightsCard(course) {
   return card;
 }
 
-SR.adapt = { RULES, MODE_METHOD, AREAS, AREA_NAME, areaOf, eventArea, abgArea, methodName, favorites, choosable, slotMethods, yardstick, analyze, evaluate, judge, baseWeights, clampWeights, targetWeights, stepToward, refresh, planShift, pickSlots, respond, pending, describe, favChips, toggleFav, homeCards, mixLine, settingsPanel, insightsCard, weekIndex };
+function resetIndex() { index = null; areaCache.clear(); memo = { key: null, val: null }; }
+SR.adapt = { resetIndex, RULES, MODE_METHOD, AREAS, AREA_NAME, areaOf, eventArea, abgArea, methodName, favorites, choosable, slotMethods, yardstick, analyze, evaluate, judge, baseWeights, clampWeights, targetWeights, stepToward, refresh, planShift, pickSlots, respond, pending, describe, favChips, toggleFav, homeCards, mixLine, settingsPanel, insightsCard, weekIndex };
 })();

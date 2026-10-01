@@ -60,9 +60,20 @@ Found while building: on `main`, "Start a shift" in NURS 4620 stops after the fi
 starts) since the NURS 4510 update was merged. It is fixed on this branch; a one-line fix for `main` alone is
 offered separately.
 
-Not built yet: owner-scoping the built-in packs, consent and terms screens (both before the pilot opens), exam
-debriefs, the shared reference library, uploads and AI generation (phases 3 and 4), spaced-review scheduling,
-and choosing content per topic by what works.
+Second build round, also on the branch:
+
+| Piece | What it does |
+| --- | --- |
+| Private packs | `packs.js`, `0003_private_packs.sql`, `tools/export-private-packs.mjs`. Behind `privatePacks` in `config.js`, off today. When on, professor-derived packs load from the database for their owner only; everyone else sees only their own courses. General material moved to `content/general.js`; all 425 items checked identical before and after. Cutover steps: `docs/PILOT-CUTOVER.md`. |
+| Terms and consent | `legal.js`, `0004_consents.sql`. Terms and privacy open inside the app. Sign-in needs "I am 18 or older and agree"; acceptance is recorded per version. Someone already signed in sees a card until they accept. |
+| Exam debriefs | `debrief.js`, `0005_exam_debriefs.sql`. The form, the notes screening, the exam profile that leans practice toward heavy topics and formats, opt-in sharing, and the pooled view (5 students, a week after the exam, totals only). |
+| Spaced review | Missed items come back after 1, 3, 7, 14 and 30 days; shifts and rounds bring due items back first. Existing Muddy points are scheduled for the next day. |
+
+All five migrations were run against PostgreSQL 16 with a stand-in for Supabase's accounts, and their security rules
+tested as several students. 25 browser tests pass.
+
+Not built yet, because each needs a practice database and an Anthropic API key: uploads and AI generation (phases 3
+and 4), and the shared reference library. Also not built: choosing content per topic by what works.
 
 ### What "NotebookLM-style" commits you to
 

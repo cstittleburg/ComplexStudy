@@ -32,6 +32,8 @@ read, not skimmed. If anything is unclear, email [contact email].
 | **Course setup** (course names, materials list, study methods and frameworks you chose, notes you wrote) | To organise your study content | You |
 | **Study activity** (which items you answered, your score, time taken, whether it was a retry, the study mode and method, the topic area, the date). In the per-item log we keep for looking at patterns across students, each item is stored as a short fingerprint, never its text. | To track your progress, adapt which formats and topics you see, and show you the Insights page | Generated as you use the Service |
 | **Study preferences** (the study methods you mark as favourites, your answers to "which round helped most", and your choices when the app reports what works for you) | To lean your practice toward what you prefer, and to tell you when something else works better | You |
+| **Exam debriefs** (exam name and date, rough length, the mix of question formats, the heaviest topics, and private notes) | To lean your practice toward the format and topics of your exams | You |
+| **Consent record** (which version of these terms you accepted, and when) | To show you agreed before your progress synced | You |
 | **Ratings and feedback** (one-tap ratings after a session, free-text feedback, "this item is wrong" flags) | To improve the Service and fix bad content | You |
 | **Technical data** (browser type, approximate region from IP address, error logs) | To keep the Service running and fix bugs | Your browser and our hosting provider |
 
@@ -62,6 +64,8 @@ or precise location. We do not use advertising trackers.
 - We do not share your uploaded materials or generated content with other users.
 - We do not use your materials to generate content for anyone else.
 - We do not share your data with your university, your program, or your instructors.
+- Your exam debrief notes never leave your device. If you choose to share a debrief, only its format and topic
+  choices are shared, combined with at least four other students', a week after the exam.
 - We do not use your data to train AI models, and neither does our AI provider.
 
 ## 5. Who we share it with

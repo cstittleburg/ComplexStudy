@@ -15,6 +15,13 @@ Each item can also carry `source: '<material name>'`, the exact name of a materi
 Focus setting in course settings uses it to limit practice to chosen materials. Use `source: 'general'` for
 framework or heuristic items that should stay in every focus.
 
+## 0a. Course packs and general material
+
+Content that comes from a course's handouts belongs in a course pack (`resp.js`, `week1.js`, `pools.js`,
+`studyguide.js`, `community.js`, or a new file). At the pilot these become private to their owner
+(`docs/PILOT-CUTOVER.md`). Material that comes from general nursing knowledge, not from anyone's handouts, goes in
+`content/general.js`, which every student gets. Mark those items `source: 'general'`.
+
 ## 0b. Topic areas (for "what actually works for you")
 
 The app matches practice to later exam-style items by topic area. It works the area out from each item's topic
