@@ -32,13 +32,20 @@ BUILTINS.nurs4510 = {
   id: 'nurs4510', builtin: true,
   name: 'NURS 4510 · Community Health Nursing',
   short: 'NURS 4510', term: 'Fall 2026',
-  blurb: 'Exam 1 practice built from the learning objectives, the epidemiology quiz and the study guide: levels of prevention, core functions, culture, program planning, community assessment, epidemiology and rates, families and vulnerable populations.',
+  blurb: 'Practice built from the professor\'s materials: levels of prevention, core functions, culture, program planning, community assessment, epidemiology and rates, families and vulnerable populations (Exam 1), plus communicable disease, environmental health, health promotion, family as client, violence and abuse, and elder abuse (Weeks 5–7).',
   frameworks: ['prevention', 'corefunctions'],
   methods: ['questions', 'rates', 'flashcards'],
   materials: [
     { name: 'Community Exam 1 Learning Objectives', type: 'Study guide', week: 'Exam 1' },
     { name: 'Epidemiology Q&A', type: 'Quiz', week: 'Exam 1' },
-    { name: 'NURS 4510 Study Guide', type: 'Study guide', week: 'Exam 1' }
+    { name: 'NURS 4510 Study Guide', type: 'Study guide', week: 'Exam 1' },
+    { name: 'Chapter 8 Communicable Disease', type: 'Slides', week: 'Week 5' },
+    { name: 'Chapter 9 Environmental Health', type: 'Slides', week: 'Week 5' },
+    { name: 'Communicable Disease Prevention Activity', type: 'Activity', week: 'Week 5' },
+    { name: 'Chapter 11 Health Promotion', type: 'Slides', week: 'Week 6' },
+    { name: 'Chapter 14 Family as Client', type: 'Slides', week: 'Week 6' },
+    { name: 'Chapter 18 Violence and Abuse', type: 'Slides', week: 'Week 6' },
+    { name: 'Preventing Elder Abuse Factsheet', type: 'Fact sheet', week: 'Week 7' }
   ],
   custom: { flashcards: [], questions: [] }
 };
@@ -61,7 +68,7 @@ function all() {
     // merge any materials or methods added to the built-in pack since this browser first stored the course
     const have = new Set((c[id].materials || []).map(m => m.name));
     def.materials.forEach(m => { if (!have.has(m.name)) (c[id].materials = c[id].materials || []).push(JSON.parse(JSON.stringify(m))); });
-    if (!c[id].methodsEdited) c[id].methods = def.methods.slice();
+    if (!c[id].methodsEdited) { c[id].methods = def.methods.slice(); c[id].blurb = def.blurb; }
     if (!c[id].frameworks || !c[id].frameworks.length) c[id].frameworks = def.frameworks.slice();
   }
   return c;
