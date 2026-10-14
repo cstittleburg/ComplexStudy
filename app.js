@@ -347,7 +347,7 @@ function questionCard({ item, pt = {}, framework = 'cjmm', stepIndex, key, label
   if (extraTop) card.append(extraTop);
   if (step && !item.hideStep) card.append(el('div', { class: 'stepchip' }, el('span', { class: 'num' }, (stepIndex ?? fw.steps.indexOf(step)) + 1), step.label, el('span', { class: 'q' }, '· ' + step.question)));
   card.append(el('p', { class: 'prompt' }, fill(item.prompt, pt)));
-  if (item.unverified) card.append(el('p', { class: 'hint' }, 'The packet did not include an answer key for this question; the key here was supplied from the course materials.'));
+  if (item.unverified) card.append(el('p', { class: 'hint' }, 'The source did not include an answer key for this question; the key here was supplied from the course materials.'));
   const box = el('div'); card.append(box);
   const r = ItemTypes[item.type](item, box, pt); const t0 = Date.now();
   const actions = el('div', { class: 'actions' });
@@ -589,7 +589,7 @@ function quickFireRound(onDone, n = 3) {
   if (!qs.length) { toast('No quick-fire questions in this course yet.'); return onDone(0); }
   function nextQ() {
     if (i >= qs.length) return onDone(scores.reduce((a, b) => a + b, 0) / scores.length);
-    const q = qs[i]; const item = { type: q.multi ? 'sata' : 'single', step: q.step || (!q.fw && ((SR.courses.active() || {}).frameworks || ['cjmm']).includes('cjmm') ? 'action' : undefined), hideStep: !!q.fw, prompt: q.q, options: q.options, rationale: q.rationale, n: q.multi ? q.options.filter(o => o.ok).length : undefined };
+    const q = qs[i]; const item = { type: q.multi ? 'sata' : 'single', step: q.step || (!q.fw && ((SR.courses.active() || {}).frameworks || ['cjmm']).includes('cjmm') ? 'action' : undefined), hideStep: !!q.fw, prompt: q.q, options: q.options, rationale: q.rationale, unverified: q.unverified, n: q.multi ? q.options.filter(o => o.ok).length : undefined };
     show(plain('Quick Fire', 'Question ' + (i + 1) + ' of ' + qs.length + ' · ' + (q.source || 'your course material'), questionCard({ item, framework: q.fw || 'cjmm', stepIndex: q.fw ? undefined : 4, key: 'qf:' + q.q.slice(0, 40), label: 'Quick fire: ' + q.q.slice(0, 60), nextLabel: i === qs.length - 1 ? 'Done' : 'Next', onDone: s => { scores.push(s); i++; nextQ(); } })));
   }
   nextQ();
@@ -717,7 +717,7 @@ function runShift() {
   }
   const leastSeen = content.cases.slice().sort((a, b) => (S.seen[a.id] || 0) - (S.seen[b.id] || 0)); const c = pick(leastSeen.slice(0, Math.max(3, Math.ceil(content.cases.length / 3))));
   if (has('whofirst') && content.whofirst.length >= 4) queue.push({ name: 'Who first?', mode: 'whofirst', run: d => whoFirstRound(d) });
-  queue.push({ name: c.title, mode: 'case', run: d => runCase(c, { onDone: d, onQuit: endShift }) });
+  queue.push({ name: c.title, mode: 'case', run: (d, quit) => runCase(c, { onDone: d, onQuit: quit }) });
   if (has('trend') && content.trends.length >= 4) queue.push({ name: 'Trend Detective', mode: 'trend', run: d => trendRound(d) });
   if (has('abg')) queue.push({ name: 'ABG Decoder', mode: 'abg', run: d => abgRound(d) });
   if (has('whofirst') && content.delegation.length) queue.push({ name: 'Delegation', mode: 'delegation', run: d => delegationRound(d) });
@@ -728,7 +728,7 @@ function runShift() {
 function runQueue(queue) {
   const results = []; let i = 0; const bar = $('#shiftbar'); bar.hidden = false; const shiftId = Date.now();
   function setBar() { bar.firstElementChild.style.width = (100 * i / queue.length) + '%'; }
-  function next(score) { if (score !== undefined) results.push(score); i++; setBar(); if (i >= queue.length) return finish(); queue[i].run(next); }
+  function next(score) { if (score !== undefined) results.push(score); i++; setBar(); if (i >= queue.length) return finish(); queue[i].run(next, endShift); }
   function endShift() { bar.hidden = true; homeView(); }
   function finish() {
     S.shifts++; checkBadges(); save(); bar.hidden = true;
@@ -744,7 +744,7 @@ function runQueue(queue) {
       el('p', { style: 'margin-top:12px' }, 'Take a real break now. Ten minutes away from the screen makes the next shift stick better.'),
       el('div', { class: 'actions' }, el('button', { class: 'btn primary', type: 'button', onclick: homeView }, 'Home'), el('button', { class: 'btn', type: 'button', onclick: runShift }, 'Another shift')))));
   }
-  setBar(); queue[0].run(next);
+  setBar(); queue[0].run(next, endShift);
 }
 
 /* ---------------- public API for the other modules ---------------- */
