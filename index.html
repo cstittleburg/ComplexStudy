@@ -303,9 +303,9 @@ table.trend td.arrow{color:var(--muted);text-align:center}
 .filters .btn.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .deck{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
 .flip{perspective:1000px;min-height:190px;cursor:pointer}
-.flip .inner{position:relative;width:100%;min-height:190px;transition:transform .5s;transform-style:preserve-3d}
+.flip .inner{position:relative;width:100%;min-height:190px;display:grid;transition:transform .5s;transform-style:preserve-3d}
 .flip.on .inner{transform:rotateY(180deg)}
-.flip .face{position:absolute;inset:0;backface-visibility:hidden;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:8px;overflow:auto}
+.flip .face{grid-area:1/1;position:relative;-webkit-backface-visibility:hidden;backface-visibility:hidden;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:8px;overflow:auto}
 .flip .face.back{transform:rotateY(180deg);background:var(--accent-soft);border-color:var(--accent);white-space:pre-line}
 .flip .face .cat{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:700}
 .flip .face .f{font-family:var(--display);font-weight:800;font-size:1.1rem}
@@ -393,6 +393,7 @@ textarea{font:inherit;color:var(--ink);background:var(--surface2);border:1px sol
 <script src="content/studyguide.js"></script>
 <script src="content/community.js"></script>
 <script src="content/community2.js"></script>
+<script src="content/classmate.js"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
 <script src="courses.js"></script>
