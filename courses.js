@@ -45,7 +45,8 @@ BUILTINS.nurs4510 = {
     { name: 'Chapter 11 Health Promotion', type: 'Slides', week: 'Week 6' },
     { name: 'Chapter 14 Family as Client', type: 'Slides', week: 'Week 6' },
     { name: 'Chapter 18 Violence and Abuse', type: 'Slides', week: 'Week 6' },
-    { name: 'Preventing Elder Abuse Factsheet', type: 'Fact sheet', week: 'Week 7' }
+    { name: 'Preventing Elder Abuse Factsheet', type: 'Fact sheet', week: 'Week 7' },
+    { name: 'Classmate flashcards', type: 'Flashcards', week: 'Weeks 5–7' }
   ],
   custom: { flashcards: [], questions: [] }
 };

@@ -61,6 +61,7 @@ content/week1.js      Week 1 NGN packet cases (trauma, stroke meds, anastomotic 
 content/studyguide.js Exam 1 study guide pack: 95 questions + 28 cards, one per guide heading
 content/community.js  NURS 4510 Community pack: questions from objectives, epi quiz, study guide; cards
 content/community2.js NURS 4510 Weeks 5–7: Ch. 8, 9, 11, 14, 18, the prevention activity key, elder abuse fact sheet
+content/classmate.js  NURS 4510 classmate flashcards (Weeks 5–7), reviewed against the slides
 content/pools.js      Who-first cards, trend templates, ABG data, quick-fire questions, rhyme deck
 docs/ADDING-CASES.md  how to add cases, cards, rhymes, or a new framework
 ```
