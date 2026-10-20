@@ -24,7 +24,8 @@ const BUILTIN = BUILTINS[BUILTIN_ID] = {
     { name: 'Complex Care Prioritization: Practical Examples', type: 'Slides', week: '' },
     { name: 'From Assessment to Action: Prioritization Matters', type: 'Slides', week: '' },
     { name: 'Acid-Base Reference Sheet', type: 'Reference', week: 'Week 3' },
-    { name: 'NURS 4620/4720 Exam 1 Study Guide', type: 'Study guide', week: 'Exam 1' }
+    { name: 'NURS 4620/4720 Exam 1 Study Guide', type: 'Study guide', week: 'Exam 1' },
+    { name: 'NURS 4620/4720 Exam 2 Study Guide', type: 'Study guide', week: 'Exam 2' }
   ],
   custom: { flashcards: [], questions: [] }
 };

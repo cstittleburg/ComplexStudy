@@ -59,6 +59,7 @@ content/neuro.js      neuro cases
 content/fluids.js     burns, fluids/electrolytes, sepsis, lifespan cases
 content/week1.js      Week 1 NGN packet cases (trauma, stroke meds, anastomotic leak)
 content/studyguide.js Exam 1 study guide pack: 95 questions + 28 cards, one per guide heading
+content/studyguide2.js Exam 2 study guide pack (renal, oncology, endocrine, GI), tagged by CJMM step
 content/community.js  NURS 4510 Community pack: questions from objectives, epi quiz, study guide; cards
 content/community2.js NURS 4510 Weeks 5–7: Ch. 8, 9, 11, 14, 18, the prevention activity key, elder abuse fact sheet
 content/classmate.js  NURS 4510 classmate flashcards (Weeks 5–7), reviewed against the slides
